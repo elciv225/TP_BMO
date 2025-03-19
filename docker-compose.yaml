@@ -1,0 +1,28 @@
+version: '3.8'
+
+services:
+  tpbmo_db:
+    image: mysql:8.0
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: tpbmo_db
+      MYSQL_USER: tpmbmo_user
+      MYSQL_PASSWORD: tpmbmo_password
+    ports:
+      - "3308:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+
+  phpmyadmin:
+    image: phpmyadmin/phpmyadmin
+    ports:
+      - "8084:80"
+    environment:
+      PMA_HOST: tpbmo_db
+      PMA_PORT: 3306
+      PMA_ARBITRARY: 1
+    depends_on:
+      - tpbmo_db
+
+volumes:
+  mysql_data:
