@@ -1,28 +1,30 @@
 package serveur;
 
-import java.io.*;
-import java.net.*;
+import com.sun.net.httpserver.HttpExchange;
+import com.sun.net.httpserver.HttpHandler;
+import com.sun.net.httpserver.HttpServer;
+
+import java.io.IOException;
+import java.io.OutputStream;
+import java.net.InetSocketAddress;
 
 public class Serveur {
-
-    public static void main(String[] args) {
-        int port = 12345;
-
-        try (ServerSocket serverSocket = new ServerSocket(port)) {
-            System.out.println("Server is listening on port " + port);
-
-            while (true) {
-                Socket clientSocket = serverSocket.accept();
-                System.out.println("Client connected: " + clientSocket.getInetAddress());
-
-                // Traitement de la connexion client (à implémenter)
-
-                clientSocket.close();
+    public static void main(String[] args) throws IOException {
+        HttpServer server = HttpServer.create(new InetSocketAddress(8080), 0);
+        server.createContext("/", new HttpHandler() {
+            @Override
+            public void handle(HttpExchange exchange) throws IOException {
+                String response = "Serveur fonctionne correctement !";
+                exchange.sendResponseHeaders(200, response.getBytes().length);
+                OutputStream os = exchange.getResponseBody();
+                os.write(response.getBytes());
+                os.close();
             }
-
-        } catch (IOException e) {
-            System.err.println("Server exception: " + e.getMessage());
-            e.printStackTrace();
-        }
+        });
+        server.setExecutor(null);
+        server.start();
+        System.out.println("Serveur démarré sur le http://localhost:8080");
     }
 }
+
+
