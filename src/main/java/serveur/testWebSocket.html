@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test WebSocket</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        #messageArea {
+            border: 1px solid #ccc;
+            height: 300px;
+            overflow-y: scroll;
+            margin-bottom: 20px;
+            padding: 10px;
+        }
+        input, button {
+            padding: 8px;
+            margin-right: 5px;
+        }
+        .received {
+            color: blue;
+        }
+        .sent {
+            color: green;
+        }
+        .system {
+            color: red;
+        }
+    </style>
+</head>
+<body>
+<h2>Client de test WebSocket</h2>
+<div>
+    <label for="wsUri">URL WebSocket:</label>
+    <input type="text" id="wsUri" value="ws://localhost:8080/websocket/echo" style="width: 300px;">
+    <button id="connect">Connecter</button>
+    <button id="disconnect" disabled>Déconnecter</button>
+</div>
+<div id="messageArea"></div>
+<div>
+    <input type="text" id="messageInput" placeholder="Entrez votre message ici..." style="width: 70%;">
+    <button id="send" disabled>Envoyer</button>
+</div>
+
+<script>
+    let websocket;
+    const connectButton = document.getElementById('connect');
+    const disconnectButton = document.getElementById('disconnect');
+    const sendButton = document.getElementById('send');
+    const messageInput = document.getElementById('messageInput');
+    const messageArea = document.getElementById('messageArea');
+    const wsUri = document.getElementById('wsUri');
+
+    function writeToScreen(message, type) {
+        const pre = document.createElement('p');
+        pre.className = type;
+        pre.innerHTML = message;
+        messageArea.appendChild(pre);
+        messageArea.scrollTop = messageArea.scrollHeight;
+    }
+
+    function connect() {
+        try {
+            websocket = new WebSocket(wsUri.value);
+
+            websocket.onopen = function(evt) {
+                writeToScreen('CONNECTÉ', 'system');
+                connectButton.disabled = true;
+                disconnectButton.disabled = false;
+                sendButton.disabled = false;
+                messageInput.focus();
+            };
+
+            websocket.onclose = function(evt) {
+                writeToScreen('DÉCONNECTÉ', 'system');
+                connectButton.disabled = false;
+                disconnectButton.disabled = true;
+                sendButton.disabled = true;
+            };
+
+            websocket.onmessage = function(evt) {
+                writeToScreen('REÇU: ' + evt.data, 'received');
+            };
+
+            websocket.onerror = function(evt) {
+                writeToScreen('ERREUR: ' + evt.data, 'system');
+                websocket.close();
+            };
+        } catch (exception) {
+            writeToScreen('Erreur: ' + exception, 'system');
+        }
+    }
+
+    function disconnect() {
+        if (websocket) {
+            websocket.close();
+        }
+    }
+
+    function sendMessage() {
+        const message = messageInput.value;
+        if (message) {
+            writeToScreen('ENVOYÉ: ' + message, 'sent');
+            websocket.send(message);
+            messageInput.value = '';
+            messageInput.focus();
+        }
+    }
+
+    connectButton.addEventListener('click', connect);
+    disconnectButton.addEventListener('click', disconnect);
+    sendButton.addEventListener('click', sendMessage);
+    messageInput.addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') {
+            sendMessage();
+        }
+    });
+</script>
+</body>
+</html>
