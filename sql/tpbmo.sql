@@ -3,10 +3,10 @@
 -- Table Personne
 CREATE TABLE IF NOT EXISTS personne
 (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    nom VARCHAR(50) NOT NULL,
+    id    INT AUTO_INCREMENT PRIMARY KEY,
+    nom   VARCHAR(50) NOT NULL,
     prenom VARCHAR(50) NOT NULL,
-    login VARCHAR(50)  NOT NULL UNIQUE,
+    login VARCHAR(50) NOT NULL UNIQUE,
     password VARCHAR(255) NOT NULL,
     connecte BOOLEAN DEFAULT FALSE
 );
@@ -14,53 +14,31 @@ CREATE TABLE IF NOT EXISTS personne
 -- Table Reunion
 CREATE TABLE IF NOT EXISTS reunion
 (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    nom VARCHAR(100) NOT NULL,
-    sujet VARCHAR(255),
-    agenda TEXT,
-    debut DATETIME NOT NULL,
-    duree INT NOT NULL,
-    type ENUM('standard','privee','democratique') NOT NULL,
-    organisateur_id INT NOT NULL,
-    animateur_id INT
+    id              INT AUTO_INCREMENT PRIMARY KEY,
+    nom             VARCHAR(100)                              NOT NULL,
+    sujet           VARCHAR(255),
+    agenda          TEXT,
+    debut           DATETIME                                  NOT NULL,
+    duree           INT                                       NOT NULL,
+    type            ENUM ('STANDARD','PRIVEE','DEMOCRATIQUE') NOT NULL,
+    organisateur_id INT                                       NOT NULL,
+    animateur_id    INT
 );
 
 -- Table pour l'association entre personnes et réunions (participation)
 CREATE TABLE IF NOT EXISTS participation
 (
-    personne_id
-        INT
-        NOT
-            NULL,
-    reunion_id
-        INT
-        NOT
-            NULL,
-    PRIMARY
-        KEY
-        (
-         personne_id,
-         reunion_id
-            )
+    personne_id INT NOT NULL,
+    reunion_id  INT NOT NULL,
+    PRIMARY KEY (personne_id, reunion_id)
 );
 
 -- Table pour les personnes autorisées dans les réunions privées
 CREATE TABLE IF NOT EXISTS autorisation_reunion_privee
 (
-    personne_id
-        INT
-        NOT
-            NULL,
-    reunion_id
-        INT
-        NOT
-            NULL,
-    PRIMARY
-        KEY
-        (
-         personne_id,
-         reunion_id
-            )
+    personne_id INT NOT NULL,
+    reunion_id  INT NOT NULL,
+    PRIMARY KEY (personne_id, reunion_id)
 );
 
 -- Table pour les demandes de parole
@@ -84,12 +62,8 @@ CREATE TABLE IF NOT EXISTS demande_parole
                   DEFAULT
                       CURRENT_TIMESTAMP,
     statut
-        ENUM
-            (
-                'en_attente',
-                'accordee',
-                'refusee'
-                ) DEFAULT 'en_attente',
+        ENUM ('EN_ATTENTE','ACCORDEE','REFUSEE'
+            ) DEFAULT 'EN_ATTENTE',
     UNIQUE
         (
          personne_id,

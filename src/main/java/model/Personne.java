@@ -6,7 +6,16 @@ public class Personne {
     private String prenom;
     private String login;
     private String password;
-    private boolean connected;
+    private boolean connecte;
+
+    public Personne(int id, String nom, String prenom, String login, String password, boolean connecte) {
+        this.id = id;
+        this.nom = nom;
+        this.prenom = prenom;
+        this.login = login;
+        this.password = password;
+        this.connecte = connecte;
+    }
 
     public int getId() {
         return id;
@@ -48,11 +57,11 @@ public class Personne {
         this.password = password;
     }
 
-    public boolean isConnected() {
-        return connected;
+    public boolean isConnecte() {
+        return connecte;
     }
 
-    public void setConnected(boolean connected) {
-        this.connected = connected;
+    public void setConnecte(boolean connecte) {
+        this.connecte = connecte;
     }
 }

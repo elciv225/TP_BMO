@@ -56,21 +56,8 @@ public class ServeurWebSocket {
 
         @OnMessage
         public void onMessage(String message, Session session) {
-            System.out.println("Message reçu de " + session.getId() + ": " + message);
-
-            // Vous pouvez implémenter une logique similaire à celle de votre HttpHandler
-            String response = "Serveur a reçu: " + message;
-
             try {
-                // Répondre au client qui a envoyé le message
-                session.getBasicRemote().sendText(response);
-
-                // Vous pouvez également diffuser le message à tous les clients connectés
-                for (Session s : sessions) {
-                    if (s.isOpen() && !s.equals(session)) {
-                        s.getBasicRemote().sendText("Diffusion: " + message);
-                    }
-                }
+                ActionHandler.handleAction(message, session);
             } catch (IOException e) {
                 e.printStackTrace();
             }

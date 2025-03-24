@@ -42,4 +42,17 @@ public class ReunionController implements ClientWebSocket.MessageListener {
     public void sendMessageToServer(String message) {
         clientWebSocket.sendMessage(message);
     }
+
+    /*  Envoie dans la web
+    public void ajouterReunion(String titre, String description, String date) {
+        JSONObject json = new JSONObject();
+        json.put("modele", "reunion");
+        json.put("action", "ajouter");
+        json.put("titre", titre);
+        json.put("description", description);
+        json.put("date", date);
+        clientWebSocket.sendMessage(json.toString());
+    }
+
+     */
 }
