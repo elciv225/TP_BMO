@@ -11,7 +11,6 @@ import java.util.TimerTask;
 public class ClientWebSocket {
 
     private Session session;
-    private final String webSocketUrl = "ws://localhost:8080/";
     private boolean reconnecting = false;
     private MessageListener messageListener;
 
@@ -29,14 +28,17 @@ public class ClientWebSocket {
      * Établit la connexion WebSocket au serveur.
      */
     private void connectToWebSocket() {
-        try {
-            WebSocketContainer container = ContainerProvider.getWebSocketContainer();
-            container.connectToServer(this, new URI(webSocketUrl));
-        } catch (DeploymentException | URISyntaxException | IOException e) {
-            notifyStatus("Non connecté - Erreur: " + e.getMessage(), "red");
-            scheduleReconnect();
-            e.printStackTrace();
-        }
+        new Thread(() -> {
+            try {
+                WebSocketContainer container = ContainerProvider.getWebSocketContainer();
+                String webSocketUrl = "ws://localhost:8080/";
+                container.connectToServer(this, new URI(webSocketUrl));
+            } catch (DeploymentException | URISyntaxException | IOException e) {
+                notifyStatus("Non connecté - Erreur: " + e.getMessage(), "red");
+                scheduleReconnect();
+                e.printStackTrace();
+            }
+        }).start();
     }
 
     @OnOpen
