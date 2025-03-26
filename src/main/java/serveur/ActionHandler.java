@@ -1,9 +1,6 @@
 package serveur;
 
 import org.json.JSONObject;
-import serveur.ReunionService;
-import serveur.WebSocketAction;
-
 import javax.websocket.Session;
 import java.io.IOException;
 import java.util.HashMap;
@@ -14,6 +11,7 @@ public class ActionHandler {
 
     static {
         actions.put("reunion", new ReunionService());
+        actions.put("authentification", new AuthentificationService());
         // Tu peux ajouter d'autres services ici comme:
         // actions.put("utilisateur", new UtilisateurService());
     }

@@ -5,7 +5,6 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
 
-// Import spécifique pour Session (important!)
 import javax.websocket.Session;
 import javax.websocket.CloseReason;
 import javax.websocket.OnClose;
@@ -24,7 +23,6 @@ public class ServeurWebSocket {
     public static void main(String[] args) {
         // Démarrez le serveur WebSocket sur le port 8080
         Server server = new Server("localhost", 8080, "", null, EndpointServeur.class);
-
         try {
             server.start();
             System.out.println("Serveur WebSocket démarré sur ws://localhost:8080/websocket");
@@ -44,8 +42,7 @@ public class ServeurWebSocket {
         @OnOpen
         public void onOpen(Session session) {
             sessions.add(session);
-            System.out.println("Nouvelle connexion établie: " + session.getId());
-
+            System.out.println("Nouvelle connexion établie avec la machine IP : ");
             try {
                 // Envoyer un message de bienvenue au client
                 session.getBasicRemote().sendText("Connexion établie avec succès au serveur WebSocket!");

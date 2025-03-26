@@ -2,8 +2,7 @@ package client;
 
 import javax.websocket.*;
 import java.io.IOException;
-import java.net.URI;
-import java.net.URISyntaxException;
+import java.net.*;
 import java.util.Timer;
 import java.util.TimerTask;
 
@@ -11,100 +10,112 @@ import java.util.TimerTask;
 public class ClientWebSocket {
 
     private Session session;
-    private boolean reconnecting = false;
-    private MessageListener messageListener;
+    private boolean reconnexion = false;
+    private String ipServeur;
+    private boolean estConnecte = false;
+    AuthentificationController controller;
 
-    public interface MessageListener {
-        void onMessageReceived(String message);
-        void onConnectionStatusChanged(String status, String color);
+    public void setController(AuthentificationController controller) {
+        this.controller = controller;
     }
 
-    public ClientWebSocket(MessageListener listener) {
-        this.messageListener = listener;
-        connectToWebSocket();
+
+    public Session getSession() {
+        return session;
+    }
+
+    public void setSession(Session session) {
+        this.session = session;
     }
 
     /**
      * Établit la connexion WebSocket au serveur.
      */
-    private void connectToWebSocket() {
+    public void connectToWebSocket(String ipEntree) {
         new Thread(() -> {
             try {
+                // Vérifier si une connexion est déjà en cours ou établie
+                if (estConnecte) {
+                    System.out.println("Connexion déjà en cours ou établie");
+                    return;
+                }
                 WebSocketContainer container = ContainerProvider.getWebSocketContainer();
-                String webSocketUrl = "ws://localhost:8080/";
+                String webSocketUrl = "ws://" + ipEntree + ":8080/";
                 container.connectToServer(this, new URI(webSocketUrl));
+                // Enregistrer l'adresse IP du serveur pour reconnection
+                this.ipServeur = ipEntree;
+                estConnecte = true;
+                System.out.println("Connecté au serveur WebSocket sur " + webSocketUrl);
             } catch (DeploymentException | URISyntaxException | IOException e) {
-                notifyStatus("Non connecté - Erreur: " + e.getMessage(), "red");
-                scheduleReconnect();
+                System.out.println("Non connecté - Erreur: " + e.getMessage());
+                seReconnecter();
                 e.printStackTrace();
             }
         }).start();
     }
 
+
     @OnOpen
     public void onOpen(Session session) {
         this.session = session;
-        reconnecting = false;
-        notifyStatus("Connecté au serveur WebSocket", "green");
+        reconnexion = false;
+        System.out.println("Connecté au serveur WebSocket");
     }
 
     @OnMessage
     public void onMessage(String message) {
-        if (messageListener != null) {
-            messageListener.onMessageReceived(message);
+        System.out.println(("Connecté au serveur WebSocket"));
+        if (controller != null) {
+            controller.traiterReponseConnexion(message);
         }
     }
 
     @OnClose
     public void onClose(CloseReason reason) {
         this.session = null;
-        notifyStatus("Déconnecté - Raison: " + reason.getReasonPhrase(), "red");
-        scheduleReconnect();
+        System.out.println("Déconnecté - Raison: " + reason.getReasonPhrase());
+        seReconnecter();
     }
 
     @OnError
     public void onError(Throwable t) {
-        notifyStatus("Erreur de connexion: " + t.getMessage(), "red");
-        scheduleReconnect();
+        System.out.println("Erreur de connexion: " + t.getMessage());
+        seReconnecter();
     }
 
     /**
-     * Envoie un message au serveur WebSocket.
+     * Reconnexion automatique après 3 secondes.
      */
-    public void sendMessage(String message) {
-        if (session != null && session.isOpen()) {
-            try {
-                session.getBasicRemote().sendText(message);
-            } catch (IOException e) {
-                notifyStatus("Erreur d'envoi: " + e.getMessage(), "red");
-                e.printStackTrace();
-            }
-        } else {
-            notifyStatus("Impossible d'envoyer - Non connecté", "red");
-        }
-    }
-
-    /**
-     * Planifie une tentative de reconnexion automatique.
-     */
-    private void scheduleReconnect() {
-        if (!reconnecting) {
-            reconnecting = true;
+    private void seReconnecter() {
+        if (!reconnexion) {
+            reconnexion = true;
             new Timer().schedule(new TimerTask() {
                 @Override
                 public void run() {
-                    connectToWebSocket();
+                    connectToWebSocket(ipServeur);
                 }
             }, 3000);
         }
     }
 
     /**
-     * Notifie l'état de connexion à l'interface.
+     * Envoie une requête texte au serveur WebSocket.
+     *
+     * @param jsonRequete La requête texte à envoyer (généralement une chaîne JSON).
      */
-    private void notifyStatus(String status, String color) {
-        if (messageListener != null) {
-            messageListener.onConnectionStatusChanged(status, color);
+    public void envoyerRequete(String jsonRequete) {
+        if (session != null && session.isOpen()) {
+            try {
+                session.getBasicRemote().sendText(jsonRequete);
+                System.out.println("Requête envoyée au serveur : " + jsonRequete);
+
+            } catch (IOException e) {
+                System.err.println("Erreur lors de l'envoi de la requête : " + e.getMessage());
+                // Gérer la déconnexion ou tenter une reconnexion si nécessaire
+            }
+        } else {
+            System.out.println("Impossible d'envoyer la requête : la session WebSocket n'est pas ouverte.");
         }
     }
+
 }

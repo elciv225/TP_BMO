@@ -1,5 +1,7 @@
 package model;
 
+import org.json.JSONObject;
+
 public class Personne {
     private int id;
     private String nom;
@@ -63,5 +65,16 @@ public class Personne {
 
     public void setConnecte(boolean connecte) {
         this.connecte = connecte;
+    }
+
+    public JSONObject toJsonObject() {
+        JSONObject json = new JSONObject();
+        json.put("id", this.id);
+        json.put("nom", this.nom);
+        json.put("prenom", this.prenom);
+        json.put("login", this.login);
+        json.put("password", this.password);
+        json.put("connecte", this.connecte);
+        return json;
     }
 }
