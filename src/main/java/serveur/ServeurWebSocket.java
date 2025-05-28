@@ -21,6 +21,11 @@ public class ServeurWebSocket {
     // Stocker toutes les sessions connectées
     private static Set<Session> sessions = Collections.synchronizedSet(new HashSet<>());
 
+    // Static getter for sessions
+    public static Set<Session> getSessions() {
+        return sessions;
+    }
+
     public static void main(String[] args) {
         // Démarrez le serveur WebSocket sur le port 8080
         Server server = new Server("localhost", 8080, "", null, EndpointServeur.class);
@@ -41,12 +46,30 @@ public class ServeurWebSocket {
     public static class EndpointServeur {
 
         @OnOpen
-        public void onOpen(Session session,  @PathParam("ipClient") String ipClient) {
+        public void onOpen(Session session) { // Removed @PathParam("ipClient") as it's not standard and query params are used
             sessions.add(session);
-            System.out.println("Nouvelle connexion établie avec la machine IP : " + ipClient);
+
+            String query = session.getQueryString(); // e.g., "reunionId=reunion123&userId=user456"
+            String reunionId = null;
+            String userId = null;
+            if (query != null) {
+                String[] params = query.split("&");
+                for (String param : params) {
+                    String[] pair = param.split("=");
+                    if (pair.length == 2) {
+                        if ("reunionId".equals(pair[0])) reunionId = pair[1];
+                        if ("userId".equals(pair[0])) userId = pair[1];
+                    }
+                }
+            }
+
+            if (reunionId != null) session.getUserProperties().put("reunionId", reunionId);
+            if (userId != null) session.getUserProperties().put("userId", userId);
+
+            System.out.println("Nouvelle connexion établie. ReunionID: " + reunionId + ", UserID: " + userId + ", SessionID: " + session.getId());
             try {
                 // Envoyer un message de bienvenue au client
-                session.getBasicRemote().sendText("Connexion établie avec succès au serveur WebSocket!");
+                session.getBasicRemote().sendText("Connexion établie avec succès au serveur WebSocket! Reunion: " + reunionId);
             } catch (IOException e) {
                 e.printStackTrace();
             }

@@ -1,98 +1,164 @@
 /* Styles généraux */
 .root {
     -fx-font-family: "Arial", sans-serif;
-    -fx-background-color: #f4f4f4; /* Fond gris clair */
+    -fx-background-color: #f4f4f4; /* Fond gris clair - General background */
 }
 
+/* Default VBox styling - can be overridden by more specific selectors */
 VBox {
-    -fx-spacing: 15;
-    -fx-padding: 20;
+    -fx-spacing: 10; /* Adjusted default spacing */
+    -fx-padding: 15; /* Adjusted default padding */
 }
 
+/* Default Label styling - can be overridden */
 Label {
-    -fx-font-size: 16px;
-    -fx-font-weight: bold;
-    -fx-text-fill: #333;
+    -fx-font-size: 14px; /* Adjusted default font size */
+    -fx-text-fill: #333333; /* Default text color */
 }
 
+/* Default TextField styling - can be overridden by ID or class selectors */
 TextField {
-    -fx-pref-width: 250px;
-    -fx-pref-height: 30px;
+    -fx-pref-height: 35px; /* Adjusted default height */
     -fx-border-radius: 5px;
-    -fx-border-color: #ccc;
-    -fx-padding: 5px;
+    -fx-border-color: #cccccc;
+    -fx-padding: 5px 10px; /* Adjusted padding */
 }
 
+/* Default Button styling - can be overridden by ID or class selectors */
 Button {
-    -fx-pref-width: 150px;
-    -fx-pref-height: 30px;
-    -fx-background-color: #4CAF50; /* Vert */
+    -fx-pref-height: 35px; /* Adjusted default height */
+    -fx-background-color: #5cb85c; /* A more neutral green */
     -fx-text-fill: white;
     -fx-font-weight: bold;
     -fx-border-radius: 5px;
+    -fx-background-radius: 5px; /* Ensure background respects border radius */
+    -fx-padding: 0 15px; /* Adjusted padding */
 }
 
 Button:hover {
-    -fx-background-color: #3e8e41; /* Vert foncé au survol */
+    -fx-background-color: #4cae4c; /* Darker green on hover */
+}
+
+Button:pressed {
+    -fx-background-color: #3e8f3e; /* Even darker on press */
 }
 
 /* Styles pour authentification.fxml */
-#connexion {
+#connexion { /* This ID is specific, so it's fine */
     -fx-pref-width: 250px;
 }
 
 /* Styles pour espaceUtilisateur.fxml */
-#welcomeLabel {
+#welcomeLabel { /* This ID is specific */
     -fx-font-size: 18px;
     -fx-text-fill: #007bff; /* Bleu */
 }
 
 /* Styles pour connexionServeur.fxml */
-#txtIpServeur {
+#txtIpServeur { /* This ID is specific */
     -fx-pref-width: 200px;
 }
 
 /* Styles pour reunion.fxml (Messagerie de groupe) */
-#reunionContainer {
-    -fx-background-color: white;
-    -fx-border-color: #ccc;
-    -fx-border-width: 1px;
-    -fx-border-radius: 5px;
+
+/* Overall container for the reunion view */
+.reunion-container { /* Style class added to root VBox in FXML */
+    -fx-background-color: #f4f6f8; /* Light gray-blue background for the reunion screen */
+    -fx-padding: 20px; /* Padding for the entire reunion view */
+    -fx-spacing: 15px; /* Spacing between elements in the reunion view VBox */
 }
 
+/* Connection status label - uses fx:id="connectionStatus" */
+#connectionStatus {
+    -fx-font-size: 0.9em; /* Smaller font size */
+    -fx-text-fill: #d9534f; /* Default to red (disconnected) */
+    -fx-padding: 5px 0 10px 0; /* Top, right, bottom, left padding */
+    -fx-font-weight: normal; /* Overrides default Label bold */
+}
+
+#connectionStatus.connected { /* Specific style for connected status */
+    -fx-text-fill: #5cb85c; /* Green for connected */
+}
+
+/* Message area where messages are displayed - uses fx:id="messageArea" */
 #messageArea {
+    -fx-spacing: 8px; /* Spacing between messages */
     -fx-padding: 10px;
-    -fx-vgap: 5px;
-    -fx-pref-height: 300px;
-    -fx-background-color: #f9f9f9;
+    -fx-background-color: #ffffff; /* White background for message area */
+    -fx-border-radius: 5px;
+    -fx-background-radius: 5px; /* Ensures background respects border radius */
+    -fx-pref-height: 300px; /* Retain specified height */
+    /* -fx-vgap is not a valid JavaFX CSS property for VBox, use -fx-spacing */
 }
 
+/* Individual messages (Labels added dynamically) - Target Labels within #messageArea VBox */
+#messageArea .label { /* More specific selector */
+    -fx-padding: 8px 12px;
+    -fx-background-color: #e1eef7; /* Light blue background for messages */
+    -fx-background-radius: 10px; /* Rounded corners for message bubbles */
+    -fx-wrap-text: true;
+    -fx-max-width: 70%; /* Prevent messages from taking full width */
+    -fx-alignment: top-left; /* Align text to top-left */
+    -fx-font-size: 1em; /* Reset font size for messages if needed */
+    -fx-font-weight: normal; /* Messages are normal weight */
+    -fx-text-fill: #333333; /* Darker text for readability */
+}
+
+/* Input area containing text field and send button - uses fx:id="inputArea" */
+#inputArea {
+    -fx-padding: 15px 0 0 0; /* Padding above the input area */
+    -fx-spacing: 10px; /* Spacing between text field and button */
+    -fx-alignment: center-left;
+    /* -fx-hgap is not valid for HBox, use -fx-spacing */
+}
+
+/* Text field for typing messages - uses fx:id="messageInput" */
+#messageInput {
+    -fx-pref-height: 40px;
+    -fx-border-color: #cccccc;
+    -fx-border-radius: 20px; /* Fully rounded ends */
+    -fx-background-radius: 20px; /* Match border radius */
+    -fx-padding: 5px 15px; /* Vertical and horizontal padding */
+    -fx-prompt-text-fill: #999999; /* Lighter color for prompt text */
+    -fx-font-size: 1em; /* Standard font size */
+    -fx-pref-width: 450px; /* Adjusted width */
+}
+
+/* Send button - uses fx:id="sendButton" */
+#sendButton {
+    -fx-pref-height: 40px;
+    -fx-background-color: #007bff; /* Primary blue color */
+    -fx-text-fill: white;
+    -fx-font-weight: bold;
+    -fx-border-radius: 20px; /* Fully rounded ends */
+    -fx-background-radius: 20px; /* Match border radius */
+    -fx-padding: 0 20px; /* Horizontal padding */
+    -fx-pref-width: 100px; /* Retain specified width or adjust as needed */
+}
+
+#sendButton:hover {
+    -fx-background-color: #0056b3; /* Darker blue on hover */
+}
+
+#sendButton:pressed {
+    -fx-background-color: #004085; /* Even darker on press */
+}
+
+
+/* Remove general .messageLabel if it was only for reunion messages,
+   as #messageArea .label is more specific and preferred.
+   If .messageLabel is used elsewhere, it can be kept or adjusted.
+   For now, assuming it's superseded for the reunion screen. */
 .messageLabel {
+    /* This style might be too general if other parts of the app use it.
+       If it was specifically for the old reunion style, it's now covered by #messageArea .label.
+       If used elsewhere, review its necessity or make it more specific.
+       Let's comment it out to avoid conflicts, assuming #messageArea .label is the primary style now. */
+    /*
     -fx-background-color: #e0e0e0;
     -fx-padding: 8px;
     -fx-border-radius: 5px;
     -fx-wrap-text: true;
     -fx-max-width: 80%;
-}
-
-#inputArea {
-    -fx-padding: 10px;
-    -fx-hgap: 5px;
-}
-
-#messageInput {
-    -fx-pref-width: 400px;
-    -fx-pref-height: 30px;
-}
-
-#sendButton {
-    -fx-pref-width: 100px;
-}
-
-#connectionStatus {
-    -fx-text-fill: red;
-}
-
-#connectionStatus.connected {
-    -fx-text-fill: green;
+    */
 }

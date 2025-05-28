@@ -112,26 +112,26 @@ ALTER TABLE participation
     ADD CONSTRAINT fk_participation_personne
         FOREIGN KEY (personne_id) REFERENCES personne (id),
     ADD CONSTRAINT fk_participation_reunion
-        FOREIGN KEY (reunion_id) REFERENCES reunion (id);
+        FOREIGN KEY (reunion_id) REFERENCES reunion (id) ON DELETE CASCADE;
 
 -- Contraintes pour la table autorisation_reunion_privee
 ALTER TABLE autorisation_reunion_privee
     ADD CONSTRAINT fk_autorisation_personne
         FOREIGN KEY (personne_id) REFERENCES personne (id),
     ADD CONSTRAINT fk_autorisation_reunion
-        FOREIGN KEY (reunion_id) REFERENCES reunion (id);
+        FOREIGN KEY (reunion_id) REFERENCES reunion (id) ON DELETE CASCADE;
 
 -- Contraintes pour la table demande_parole
 ALTER TABLE demande_parole
     ADD CONSTRAINT fk_demande_personne
         FOREIGN KEY (personne_id) REFERENCES personne (id),
     ADD CONSTRAINT fk_demande_reunion
-        FOREIGN KEY (reunion_id) REFERENCES reunion (id);
+        FOREIGN KEY (reunion_id) REFERENCES reunion (id) ON DELETE CASCADE;
 
 -- Contraintes pour la table message
 ALTER TABLE message
     ADD CONSTRAINT fk_message_personne
         FOREIGN KEY (personne_id) REFERENCES personne (id),
     ADD CONSTRAINT fk_message_reunion
-        FOREIGN KEY (reunion_id) REFERENCES reunion (id);
+        FOREIGN KEY (reunion_id) REFERENCES reunion (id) ON DELETE CASCADE;
 
