@@ -16,7 +16,7 @@ services:
   phpmyadmin:
     image: phpmyadmin/phpmyadmin
     ports:
-      - "8081:80"
+      - "8200:80"
     environment:
       PMA_HOST: tpbmo_db
       PMA_PORT: 3306 # phpMyAdmin will connect to the DB on its internal port 3306

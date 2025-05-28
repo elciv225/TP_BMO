@@ -23,6 +23,10 @@ public class ServeurWebSocket {
     // Stocker toutes les sessions connectées
     private static Set<Session> sessions = Collections.synchronizedSet(new HashSet<>());
 
+    public static Set<Session> getSessions() {
+        return sessions;
+    }
+
     public static void main(String[] args) {
         // Démarrez le serveur WebSocket sur le port 8080
         Server server = new Server("localhost", 8080, "", null, EndpointServeur.class);

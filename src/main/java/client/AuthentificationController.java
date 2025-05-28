@@ -32,8 +32,8 @@ public class AuthentificationController {
 
     @FXML
     public void initialize() {
-        // clientWebSocket = new ClientWebSocket(); // Removed: Instance should be passed in
-        // clientWebSocket.setControllerAuth(this); // Removed: Registration handled by the passer
+        clientWebSocket = new ClientWebSocket(); // Removed: Instance should be passed in
+        clientWebSocket.setControllerAuth(this); // Removed: Registration handled by the passer
     }
 
     @FXML
