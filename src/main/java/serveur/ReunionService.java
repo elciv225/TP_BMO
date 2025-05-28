@@ -75,7 +75,7 @@ public class ReunionService implements WebSocketAction {
             return;
         }
 
-        try (Connection conn = Database.getInstance().getConnection()) {
+        try (Connection conn = Database.getConnection()) {
             // Fetch Reunion Details (especially type and organizer_id)
             String reunionType;
             int organisateurId;
@@ -194,7 +194,7 @@ public class ReunionService implements WebSocketAction {
 
         String senderName = "Unknown"; // Default sender name
 
-        try (Connection conn = Database.getInstance().getConnection()) {
+        try (Connection conn = Database.getConnection()) {
             // Save message to database
             String sqlInsert = "INSERT INTO message (personne_id, reunion_id, contenu, heure_envoi) VALUES (?, ?, ?, NOW())";
             try (PreparedStatement pstmtInsert = conn.prepareStatement(sqlInsert)) {

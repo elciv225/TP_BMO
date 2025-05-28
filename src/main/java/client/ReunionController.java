@@ -1,7 +1,9 @@
 package client;
 
+import javafx.animation.FadeTransition;
 import javafx.application.Platform;
 import javafx.fxml.FXML;
+import javafx.scene.Node;
 import javafx.scene.control.Label;
 import javafx.scene.control.TextField;
 import javafx.scene.control.Button;
@@ -9,6 +11,7 @@ import javafx.scene.layout.VBox;
 import javafx.scene.layout.HBox; // Added for invitationArea
 import javafx.scene.control.Alert; // Added for error popups
 // import javafx.scene.control.ListView; // If participantsList is added
+import javafx.util.Duration;
 import org.json.JSONObject;
 
 public class ReunionController {
@@ -23,7 +26,7 @@ public class ReunionController {
     @FXML private TextField inviteUserField;
     @FXML private Button inviteButton;
     // @FXML private ListView<String> participantsList; // If you add it
-    @FXML private VBox reunionContainer; // Root pane for animation, should match fx:id in FXML
+    @FXML private VBox reunionContainer;
 
     private ClientWebSocket clientWebSocket;
     // Instance variables for IDs - to be set by initData
@@ -34,12 +37,9 @@ public class ReunionController {
 
     @FXML
     public void initialize() {
-        // WebSocket initialization is deferred until initData provides necessary IDs.
-        // Setup for Invitation Feature - event handler only
         if (inviteButton != null) {
             inviteButton.setOnAction(event -> handleInviteUser());
         }
-        // Visibility of invitationArea will be handled by initData
     }
 
     private void applyFadeInAnimation(Node node) {

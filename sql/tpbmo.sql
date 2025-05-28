@@ -44,58 +44,22 @@ CREATE TABLE IF NOT EXISTS autorisation_reunion_privee
 -- Table pour les demandes de parole
 CREATE TABLE IF NOT EXISTS demande_parole
 (
-    id
-        INT
-        AUTO_INCREMENT
-        PRIMARY
-            KEY,
-    personne_id
-        INT
-        NOT
-            NULL,
-    reunion_id
-        INT
-        NOT
-            NULL,
-    heure_demande
-        TIMESTAMP
-                  DEFAULT
-                      CURRENT_TIMESTAMP,
-    statut
-        ENUM ('EN_ATTENTE','ACCORDEE','REFUSEE'
-            ) DEFAULT 'EN_ATTENTE',
-    UNIQUE
-        (
-         personne_id,
-         reunion_id,
-         statut
-            )
+    id            INT AUTO_INCREMENT PRIMARY KEY,
+    personne_id   INT NOT NULL,
+    reunion_id    INT NOT NULL,
+    heure_demande TIMESTAMP                                DEFAULT CURRENT_TIMESTAMP,
+    statut        ENUM ('EN_ATTENTE','ACCORDEE','REFUSEE') DEFAULT 'EN_ATTENTE',
+    UNIQUE (personne_id, reunion_id, statut)
 );
 
 -- Table pour stocker les messages/interventions
 CREATE TABLE IF NOT EXISTS message
 (
-    id
-        INT
-        AUTO_INCREMENT
-        PRIMARY
-            KEY,
-    personne_id
-        INT
-        NOT
-            NULL,
-    reunion_id
-        INT
-        NOT
-            NULL,
-    contenu
-        TEXT
-        NOT
-            NULL,
-    heure_envoi
-        TIMESTAMP
-        DEFAULT
-            CURRENT_TIMESTAMP
+    id          INT AUTO_INCREMENT PRIMARY KEY,
+    personne_id INT  NOT NULL,
+    reunion_id  INT  NOT NULL,
+    contenu     TEXT NOT NULL,
+    heure_envoi TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
 -- 2. Ajout des contraintes de clés étrangères
