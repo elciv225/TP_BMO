@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.layout.VBox?>
+
+<!-- Root VBox uses both page-container for common layout and espace-administrateur-container for specific overrides -->
+<VBox fx:id="adminContainer" styleClass="page-container, espace-administrateur-container"
+      alignment="TOP_CENTER" spacing="30.0"
+      stylesheets="@styles/main.css"
+      prefHeight="600.0" prefWidth="800.0"
+      xmlns="http://javafx.com/javafx/23.0.1" xmlns:fx="http://javafx.com/fxml/1"
+      fx:controller="client.EspaceAdministrateurController">
+    <padding>
+        <!-- Padding is now handled by .page-container or .espace-administrateur-container, removing inline -->
+        <Insets top="0" right="0" bottom="0" left="0" />
+    </padding>
+
+    <Label text="Panneau d'Administration" styleClass="main-title" />
+
+    <VBox styleClass="admin-content-area" alignment="CENTER" VBox.vgrow="ALWAYS">
+        <Label text="Les outils d'administration apparaîtront ici." styleClass="placeholder-label" />
+    </VBox>
+
+</VBox>

@@ -23,6 +23,7 @@ public class ReunionController {
     @FXML private TextField inviteUserField;
     @FXML private Button inviteButton;
     // @FXML private ListView<String> participantsList; // If you add it
+    @FXML private VBox reunionContainer; // Root pane for animation, should match fx:id in FXML
 
     private ClientWebSocket clientWebSocket;
     // Instance variables for IDs - to be set by initData
@@ -39,6 +40,20 @@ public class ReunionController {
             inviteButton.setOnAction(event -> handleInviteUser());
         }
         // Visibility of invitationArea will be handled by initData
+    }
+
+    private void applyFadeInAnimation(Node node) {
+        if (node != null) {
+            node.setOpacity(0.0); // Start fully transparent
+
+            FadeTransition fadeIn = new FadeTransition(Duration.millis(500), node);
+            fadeIn.setFromValue(0.0);
+            fadeIn.setToValue(1.0);
+            fadeIn.setDelay(Duration.millis(100)); // Optional delay
+            fadeIn.play();
+        } else {
+            System.err.println("Cannot apply fade-in: node is null for ReunionController.");
+        }
     }
 
     // Method to initialize controller with necessary data
@@ -146,6 +161,9 @@ public class ReunionController {
         } else {
             System.err.println("ReunionController: invitationArea is null in initData. FXML might not be loaded correctly or fx:id is missing.");
         }
+
+        // Apply fade-in animation to the root pane
+        applyFadeInAnimation(reunionContainer);
     }
 
     @FXML

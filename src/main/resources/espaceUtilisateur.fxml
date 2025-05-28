@@ -5,15 +5,31 @@
 <?import javafx.scene.control.Label?>
 <?import javafx.scene.control.TextField?>
 <?import javafx.scene.layout.VBox?>
+<?import javafx.geometry.Insets?>
 
-<VBox prefHeight="200.0" prefWidth="400.0" stylesheets="@styles/main.css" xmlns="http://javafx.com/javafx/23.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="client.EspaceUtilisateurController">
+<!-- Root VBox uses both page-container for common layout and espace-utilisateur-container for specific overrides -->
+<VBox fx:id="espaceUtilisateurRootPane" styleClass="page-container, espace-utilisateur-container" alignment="TOP_CENTER" spacing="30.0" prefHeight="500.0" prefWidth="600.0" stylesheets="@styles/main.css" xmlns="http://javafx.com/javafx/23.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="client.EspaceUtilisateurController">
     <padding>
-        <Insets bottom="20.0" left="20.0" right="20.0" top="20.0" />
+        <!-- Padding is now handled by .page-container or .espace-utilisateur-container, removing inline -->
+        <Insets bottom="0" left="0" right="0" top="0" />
     </padding>
-    <Label fx:id="welcomeLabel" text="Bienvenue Utilisateur" />
-   <Button fx:id="btnCreerReunion" minHeight="30.0" mnemonicParsing="false" onAction="#handleClickCreerReunion" prefHeight="30.0" text="Créer une réunion" />
-   <Label text="Titre réunion" />
-   <TextField fx:id="txtTitreReunion" minHeight="25.0" />
-   <Button fx:id="btnRejoindre" minHeight="30.0" mnemonicParsing="false" prefHeight="30.0" prefWidth="150.0" text="Rejoindre la réunion" />
+    <Label fx:id="welcomeLabel" text="Bienvenue Utilisateur" styleClass="main-title"/>
+
+    <VBox styleClass="section-box" alignment="CENTER_LEFT" spacing="15.0">
+        <children>
+            <Label text="Créer une Nouvelle Réunion" styleClass="section-title"/>
+            <Button fx:id="btnCreerReunion" text="Créer une réunion" styleClass="primary-button" onAction="#handleClickCreerReunion"/>
+        </children>
+    </VBox>
+
+    <VBox styleClass="section-box" alignment="CENTER_LEFT" spacing="15.0">
+        <children>
+            <Label text="Rejoindre une Réunion Existante" styleClass="section-title"/>
+            <Label text="Titre de la réunion:" styleClass="field-label"/>
+            <TextField fx:id="txtTitreReunion" styleClass="styled-text-field" promptText="Entrez le titre ou l'ID de la réunion"/>
+            <Button fx:id="btnRejoindre" text="Rejoindre la réunion" styleClass="primary-button" onAction="#handleClickJoinReunion"/>
+            <!-- Assuming handleClickJoinReunion is the intended handler for joining -->
+        </children>
+    </VBox>
     <!-- Add other UI elements for the user space here -->
 </VBox>

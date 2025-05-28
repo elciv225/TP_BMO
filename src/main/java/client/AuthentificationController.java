@@ -11,6 +11,10 @@ import javafx.scene.control.TextField;
 import javafx.stage.Stage;
 import javafx.stage.Window;
 import org.json.JSONObject;
+import javafx.scene.layout.VBox; // Added for root pane
+import javafx.animation.FadeTransition; // Added for animation
+import javafx.util.Duration; // Added for animation
+import javafx.scene.Node; // Added for applyFadeInAnimation helper
 
 import java.io.IOException;
 
@@ -18,11 +22,20 @@ public class AuthentificationController {
     @FXML
     public TextField txtIpServeur;
     @FXML
-    public Button connexion;
+    public Button connexion; // Assuming this is from authentification.fxml based on its name
+    // If 'connexion' is the fx:id for the button in connexionServeur.fxml, it might conflict or be confusing.
+    // For now, proceeding with the assumption that FXML injection handles this correctly.
     @FXML
     public TextField txtPassword;
     @FXML
     public TextField txtLogin;
+
+    // Root panes for animation - these need to be public if initialize() is not from Initializable
+    // or if access is needed from a non-FXML context that calls initialize().
+    // However, @FXML fields are typically private. Let's assume standard FXML injection.
+    @FXML private VBox authRootPane; // For authentification.fxml
+    @FXML private VBox connexionServeurRootPane; // For connexionServeur.fxml
+
 
     private ClientWebSocket clientWebSocket;
 
@@ -34,6 +47,29 @@ public class AuthentificationController {
     public void initialize() {
         clientWebSocket = new ClientWebSocket();
         clientWebSocket.setControllerAuth(this); // Lien entre le controleur et le client WebSocket
+
+        // Apply animations
+        if (authRootPane != null) {
+            applyFadeInAnimation(authRootPane);
+        }
+        if (connexionServeurRootPane != null) {
+            applyFadeInAnimation(connexionServeurRootPane);
+        }
+    }
+
+    private void applyFadeInAnimation(Node node) {
+        if (node != null) {
+            node.setOpacity(0.0); // Start fully transparent
+
+            FadeTransition fadeIn = new FadeTransition(Duration.millis(500), node);
+            fadeIn.setFromValue(0.0);
+            fadeIn.setToValue(1.0);
+            fadeIn.setDelay(Duration.millis(100)); // Optional delay
+            fadeIn.play();
+        } else {
+            // This might be expected if the controller instance is shared and only one FXML is active
+            // System.err.println("Cannot apply fade-in: node is null.");
+        }
     }
 
     @FXML

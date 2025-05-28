@@ -1,15 +1,21 @@
 package client;
 
+import javafx.animation.FadeTransition; // Added for animation
 import javafx.application.Platform;
 import javafx.fxml.FXML;
 import javafx.geometry.Insets;
+import javafx.scene.Node; // Added for applyFadeInAnimation helper
 import javafx.scene.control.*;
 import javafx.scene.layout.GridPane;
+import javafx.scene.layout.VBox; // Added for root pane
+import javafx.util.Duration; // Added for animation
 import model.Reunion;
-import model.ReunionManager;
+// ReunionManager is not used, can be removed if not needed later
+// import model.ReunionManager;
 import org.json.JSONObject;
 
-import java.sql.SQLException;
+// SQLException is not used, can be removed if not needed later
+// import java.sql.SQLException;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
@@ -27,6 +33,8 @@ public class EspaceUtilisateurController {
     public Button btnRejoindre;
     @FXML
     private Label welcomeLabel;
+    @FXML
+    private VBox espaceUtilisateurRootPane; // Root pane for animation
 
     private Reunion reunion;
 
@@ -47,8 +55,28 @@ public class EspaceUtilisateurController {
         clientWebSocket = new ClientWebSocket();
         clientWebSocket.setControllerEspc(this);
 
+        // Apply animations
+        if (espaceUtilisateurRootPane != null) {
+            applyFadeInAnimation(espaceUtilisateurRootPane);
+        } else {
+            System.err.println("EspaceUtilisateurController: espaceUtilisateurRootPane is null. FXML might not be loaded correctly or fx:id is missing.");
+        }
     }
 
+    private void applyFadeInAnimation(Node node) {
+        if (node != null) {
+            node.setOpacity(0.0); // Start fully transparent
+
+            FadeTransition fadeIn = new FadeTransition(Duration.millis(500), node);
+            fadeIn.setFromValue(0.0);
+            fadeIn.setToValue(1.0);
+            fadeIn.setDelay(Duration.millis(100)); // Optional delay
+            fadeIn.play();
+        } else {
+            // This might be expected if the controller instance is shared and only one FXML is active
+            // System.err.println("Cannot apply fade-in: node is null for EspaceUtilisateurController.");
+        }
+    }
 
 
     public void setUserInfo(String nom, String prenom) {
@@ -165,11 +193,11 @@ public class EspaceUtilisateurController {
         });
 
         // Gestion du résultat du dialogue
-        dialog.showAndWait().ifPresent(r -> { // Changer 'r' en 'reunion' pour plus de clarté
+        dialog.showAndWait().ifPresent(r -> { 
             if (r != null) {
                 System.out.println("Réunion créée: " + r.toString());
-                setReunion(r); // Utiliser 'reunion' ici
-                creerReunion(r); // Utiliser 'reunion' ici
+                setReunion(r); 
+                creerReunion(r); 
             }
         });
     }
@@ -191,7 +219,7 @@ public class EspaceUtilisateurController {
         json.put("date_debut", reunion.getDebut().toString()); // Format ISO 8601
         json.put("duree", reunion.getDuree());
         json.put("type", reunion.getType().toString());
-        json.put("id_organisateur", reunion.getId());
+        json.put("id_organisateur", reunion.getId()); // Assuming getId() on Reunion returns the intended organizer_id for creation payload.
 
         return json.toString();
     }
