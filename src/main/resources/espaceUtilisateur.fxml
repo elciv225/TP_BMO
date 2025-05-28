@@ -12,8 +12,20 @@
     </padding>
     <Label fx:id="welcomeLabel" text="Bienvenue Utilisateur" />
    <Button fx:id="btnCreerReunion" minHeight="30.0" mnemonicParsing="false" onAction="#handleClickCreerReunion" prefHeight="30.0" text="Créer une réunion" />
-   <Label text="Titre réunion" />
-   <TextField fx:id="txtTitreReunion" minHeight="25.0" />
+
+    <VBox spacing="10.0" VBox.vgrow="ALWAYS">
+        <Label text="Liste des Réunions:" style="-fx-font-weight: bold; -fx-font-size: 14px;" />
+        <ListView fx:id="meetingsListView" prefHeight="150.0" VBox.vgrow="ALWAYS"/>
+
+        <Label text="Inviter un utilisateur à la réunion sélectionnée:" style="-fx-font-weight: bold; -fx-font-size: 14px;"/>
+        <HBox spacing="5.0">
+            <TextField fx:id="userInputForInvite" promptText="ID ou email de l'utilisateur" HBox.hgrow="ALWAYS"/>
+            <Button fx:id="inviteUserButton" text="Inviter" onAction="#handleInviteUser"/>
+        </HBox>
+    </VBox>
+
+   <Label text="Rejoindre par Titre/Code (existant):" />
+   <TextField fx:id="txtTitreReunion" minHeight="25.0" promptText="Entrez le titre ou code de la réunion"/>
    <Button fx:id="btnRejoindre" minHeight="30.0" mnemonicParsing="false" prefHeight="30.0" prefWidth="150.0" text="Rejoindre la réunion" />
     <!-- Add other UI elements for the user space here -->
 </VBox>

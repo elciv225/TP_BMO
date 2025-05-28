@@ -5,6 +5,8 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
 
+import javax.websocket.SendHandler;
+import javax.websocket.SendResult;
 import javax.websocket.Session;
 import javax.websocket.CloseReason;
 import javax.websocket.OnClose;
@@ -44,19 +46,29 @@ public class ServeurWebSocket {
         public void onOpen(Session session,  @PathParam("ipClient") String ipClient) {
             sessions.add(session);
             System.out.println("Nouvelle connexion établie avec la machine IP : " + ipClient);
-            try {
-                // Envoyer un message de bienvenue au client
-                session.getBasicRemote().sendText("Connexion établie avec succès au serveur WebSocket!");
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
+            // Envoyer un message de bienvenue au client de manière asynchrone
+            session.getAsyncRemote().sendText("Connexion établie avec succès au serveur WebSocket!", new SendHandler() {
+                @Override
+                public void onResult(SendResult result) {
+                    if (!result.isOK()) {
+                        System.err.println("Erreur lors de l'envoi du message de bienvenue à la session " + session.getId() + ": " + result.getException());
+                        result.getException().printStackTrace();
+                    } else {
+                        System.out.println("Message de bienvenue envoyé avec succès à la session " + session.getId());
+                    }
+                }
+            });
         }
 
         @OnMessage
         public void onMessage(String message, Session session) {
+            // Assuming ActionHandler.handleAction might also send messages.
+            // If ActionHandler directly uses the session to send messages,
+            // those parts would need to be updated as well.
+            // For now, this subtask only focuses on ServeurWebSocket.java
             try {
                 ActionHandler.handleAction(message, session);
-            } catch (IOException e) {
+            } catch (IOException e) { // ActionHandler might still throw IOException for other reasons
                 e.printStackTrace();
             }
         }
