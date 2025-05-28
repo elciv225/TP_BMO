@@ -37,7 +37,10 @@ public class ReunionService implements WebSocketAction {
                 futureReponse = listerReunionsAsync(data, actionOriginale); // Shell implementation for now
                 break;
             case "inviter": // New action
-                futureReponse = inviterUtilisateurAsync(data, actionOriginale); // Shell implementation for now
+                futureReponse = inviterUtilisateurAsync(data, actionOriginale); 
+                break;
+            case "rejoindreParCode": // New action
+                futureReponse = rejoindreReunionParCodeAsync(data, session, actionOriginale);
                 break;
             default:
                 futureReponse = CompletableFuture.completedFuture(genererReponseErreur("Action inconnue '" + action + "'", actionOriginale));
@@ -124,7 +127,7 @@ public class ReunionService implements WebSocketAction {
                 if (idAnim != null && idAnim.intValue() != 0) {
                      reunionDetails.put("idAnimateur", idAnim);
                 }
-                reponseJson.put("reunion", reunionDetails);
+                reponseJson.put("nouvelleReunion", reunionDetails); // Changed key name
 
             } catch (SQLException e) {
                 System.err.println("Erreur SQL (création réunion): " + e.getMessage());
@@ -304,12 +307,68 @@ public class ReunionService implements WebSocketAction {
         }, Database.getDbExecutor());
     }
 
-    private String genererReponseErreur(String message, String actionOriginale) { // Added actionOriginale
+    private String genererReponseErreur(String message, String actionOriginale) { 
         JSONObject reponseJson = new JSONObject();
         reponseJson.put("modele", "reunion");
         reponseJson.put("actionOriginale", actionOriginale);
         reponseJson.put("statut", "echec");
         reponseJson.put("message", message);
         return reponseJson.toString();
+    }
+
+    private CompletableFuture<String> rejoindreReunionParCodeAsync(JSONObject data, Session session, String actionOriginale) {
+        return CompletableFuture.supplyAsync(() -> {
+            JSONObject responseJson = new JSONObject();
+            responseJson.put("modele", "reunion");
+            responseJson.put("actionOriginale", actionOriginale);
+
+            try {
+                String meetingCode = data.getString("code"); // Client sends "code"
+                Integer personneId = (Integer) session.getUserProperties().get("userId");
+
+                if (personneId == null) {
+                    return genererReponseErreur("Utilisateur non authentifié.", actionOriginale);
+                }
+                if (meetingCode == null || meetingCode.trim().isEmpty()) {
+                    return genererReponseErreur("Le code de réunion ne peut pas être vide.", actionOriginale);
+                }
+
+                ReunionManager reunionManager = new ReunionManager();
+                Reunion reunion = reunionManager.rejoindreReunionParCode(meetingCode, personneId);
+                
+                // If rejoindreReunionParCode is successful, it returns the Reunion object.
+                // If it throws an exception (e.g., reunion not found, failed to add participation), it's caught below.
+
+                responseJson.put("statut", "succes");
+                responseJson.put("message", "Réunion rejointe avec succès via le code " + meetingCode);
+                
+                JSONObject reunionDetails = new JSONObject();
+                reunionDetails.put("id", reunion.getId());
+                reunionDetails.put("titre", reunion.getNom());
+                reunionDetails.put("sujet", reunion.getSujet());
+                reunionDetails.put("agenda", reunion.getAgenda());
+                reunionDetails.put("debut", reunion.getDebut().toString());
+                reunionDetails.put("duree", reunion.getDuree());
+                reunionDetails.put("type", reunion.getType().toString());
+                reunionDetails.put("idOrganisateur", reunion.getIdOrganisateur());
+                if (reunion.getIdAnimateur() != 0) {
+                     reunionDetails.put("idAnimateur", reunion.getIdAnimateur());
+                }
+                reunionDetails.put("meeting_code", reunion.getMeetingCode());
+                responseJson.put("reunion", reunionDetails);
+
+            } catch (SQLException e) {
+                System.err.println("Erreur SQL (rejoindreParCode): " + e.getMessage());
+                return genererReponseErreur("Erreur base de données: " + e.getMessage(), actionOriginale);
+            } catch (org.json.JSONException e) {
+                System.err.println("Erreur JSON (rejoindreParCode): " + e.getMessage());
+                return genererReponseErreur("Données mal formatées: " + e.getMessage(), actionOriginale);
+            } catch (Exception e) {
+                System.err.println("Erreur inattendue (rejoindreParCode): " + e.getMessage());
+                e.printStackTrace();
+                return genererReponseErreur("Erreur serveur: " + e.getMessage(), actionOriginale);
+            }
+            return responseJson.toString();
+        }, Database.getDbExecutor());
     }
 }

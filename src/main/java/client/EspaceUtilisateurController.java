@@ -53,9 +53,9 @@ public class EspaceUtilisateurController {
 
     @FXML
     public void initialize() {
-        clientWebSocket = new ClientWebSocket();
-        clientWebSocket.setControllerEspc(this);
-        requestMeetingList();
+        // clientWebSocket = new ClientWebSocket(); // Removed: Instance will be injected
+        // clientWebSocket.setControllerEspc(this); // Removed: Registration will be done in setClientWebSocket
+        // requestMeetingList(); // This should be called after clientWebSocket is set
 
         // Bind the action for btnRejoindre
         if (btnRejoindre != null) {
@@ -71,6 +71,14 @@ public class EspaceUtilisateurController {
         }
     }
 
+    public void setClientWebSocket(ClientWebSocket clientWebSocket) {
+        this.clientWebSocket = clientWebSocket;
+        if (this.clientWebSocket != null) {
+            this.clientWebSocket.setControllerEspc(this); // Register itself
+            requestMeetingList(); // Now that clientWebSocket is set, request the list
+        }
+    }
+
     private String parseTitleFromString(String meetingInfo) {
         if (meetingInfo == null) return "Titre Inconnu";
         String titlePrefix = "Titre: ";
@@ -80,24 +88,27 @@ public class EspaceUtilisateurController {
             int titleEndIndex = meetingInfo.indexOf(" (Début:", titleStartIndex);
             if (titleEndIndex != -1) {
                 return meetingInfo.substring(titleStartIndex, titleEndIndex).trim();
-            } else { // Fallback if (Début: part is missing
-                return meetingInfo.substring(titleStartIndex).trim();
             }
+            return meetingInfo.substring(titleStartIndex).trim(); // If (Début: is not there
         }
-        // Fallback if "Titre: " prefix is missing, try to get content after "ID: xxx - "
-        String idPrefix = "ID: ";
-        int idEndIndex = meetingInfo.indexOf(" - ");
-        if (idEndIndex != -1 && meetingInfo.startsWith(idPrefix)) {
-             String potentialTitle = meetingInfo.substring(idEndIndex + 3).trim();
-             int debutIndex = potentialTitle.indexOf(" (Début:");
-             if (debutIndex != -1) {
-                 return potentialTitle.substring(0, debutIndex).trim();
-             }
-             return potentialTitle;
-        }
-        return "Titre Inconnu"; // Default if parsing fails
+        return "Titre Inconnu"; 
     }
 
+    private String parseMeetingCodeFromString(String meetingInfo) {
+        if (meetingInfo == null) return null;
+        String prefix = "Code: ";
+        int startIndex = meetingInfo.indexOf(prefix);
+        if (startIndex != -1) {
+            startIndex += prefix.length();
+            int endIndex = meetingInfo.indexOf(" - ", startIndex); // Ends before " - ID: "
+            if (endIndex != -1) {
+                return meetingInfo.substring(startIndex, endIndex).trim();
+            }
+        }
+        System.err.println("Could not parse Meeting Code from: " + meetingInfo);
+        return null;
+    }
+    
     private String parseAgendaFromMeetingInfo(String meetingInfo) {
         // The current meetingInfo string "ID: %d - Titre: %s (Début: %s)" does not contain the agenda.
         // Agenda would need to be fetched separately or included in this string.
@@ -115,27 +126,35 @@ public class EspaceUtilisateurController {
             return;
         }
 
-        String reunionId = parseReunionIdFromString(selectedMeetingInfo);
-        String title = parseTitleFromString(selectedMeetingInfo);
-        String agenda = parseAgendaFromMeetingInfo(selectedMeetingInfo); // Placeholder for now
+        String reunionId = parseReunionIdFromString(selectedMeetingInfo); // Assumes ID is after "ID: "
+        String title = parseTitleFromString(selectedMeetingInfo);     // Assumes Title is after "Titre: "
+        String meetingCode = parseMeetingCodeFromString(selectedMeetingInfo); // Assumes Code is after "Code: "
+        String agenda = parseAgendaFromMeetingInfo(selectedMeetingInfo); // Still a placeholder
 
-        if (reunionId == null) {
-            showAlert(false, "Erreur", "Impossible d'identifier l'ID de la réunion sélectionnée.");
+        if (reunionId == null || meetingCode == null) { // Code is also essential now
+            showAlert(false, "Erreur", "Impossible d'identifier l'ID ou le Code de la réunion sélectionnée.");
             return;
         }
+        navigateToReunionView(reunionId, title, agenda, meetingCode);
+    }
 
+    private void navigateToReunionView(String id, String title, String agenda, String code) {
         try {
             FXMLLoader loader = new FXMLLoader(getClass().getResource("/reunion.fxml"));
             Parent reunionRoot = loader.load();
 
             ReunionController reunionController = loader.getController();
-            reunionController.setMeetingData(reunionId, title, agenda);
-            reunionController.setClientWebSocket(this.clientWebSocket); // Pass the existing WebSocket client
+            // The setMeetingData in ReunionController will need to be updated to accept meetingCode
+            reunionController.setMeetingData(id, title, agenda, code); 
+            if (this.clientWebSocket != null) {
+                reunionController.setClientWebSocket(this.clientWebSocket);
+            }
 
-            Stage stage = (Stage) enterMeetingButton.getScene().getWindow();
+            // Determine current stage. WelcomeLabel is always present.
+            Stage stage = (Stage) welcomeLabel.getScene().getWindow();
             Scene scene = new Scene(reunionRoot);
             stage.setScene(scene);
-            stage.setTitle("Réunion: " + title); // Set a more specific title
+            stage.setTitle("Réunion: " + title + (code != null ? " (Code: " + code + ")" : ""));
             stage.show();
 
         } catch (IOException e) {
@@ -143,7 +162,7 @@ public class EspaceUtilisateurController {
             showAlert(false, "Erreur de Navigation", "Impossible de charger la vue de la réunion: " + e.getMessage());
         }
     }
-
+    
     private void requestMeetingList() {
         JSONObject listRequest = new JSONObject();
         listRequest.put("modele", "reunion");
@@ -188,19 +207,25 @@ public class EspaceUtilisateurController {
     private String parseReunionIdFromString(String meetingInfo) {
         if (meetingInfo == null) return null;
         String prefix = "ID: ";
-        int startIndex = meetingInfo.indexOf(prefix);
-        if (startIndex != -1) {
-            startIndex += prefix.length();
-            int endIndex = meetingInfo.indexOf(" -", startIndex);
-            if (endIndex != -1) {
-                return meetingInfo.substring(startIndex, endIndex).trim();
-            } else {
-                return meetingInfo.substring(startIndex).trim();
+        // Find "ID: " which should be after "Code: xxx - "
+        int idStartIndexSearch = meetingInfo.indexOf(prefix);
+        if (idStartIndexSearch != -1) {
+            int actualIdStartIndex = idStartIndexSearch + prefix.length();
+            int idEndIndex = meetingInfo.indexOf(" - ", actualIdStartIndex); // Ends before " - Titre: "
+            if (idEndIndex != -1) {
+                return meetingInfo.substring(actualIdStartIndex, idEndIndex).trim();
+            } else { // If " - Titre: " is not there, maybe it's the rest of the string after ID:
+                 int debutIndex = meetingInfo.indexOf(" (Début:", actualIdStartIndex);
+                 if(debutIndex != -1) {
+                     return meetingInfo.substring(actualIdStartIndex, debutIndex).trim();
+                 }
+                 return meetingInfo.substring(actualIdStartIndex).trim();
             }
         }
         System.err.println("Could not parse Reunion ID from: " + meetingInfo);
         return null;
     }
+
 
     public void setUserInfo(String nom, String prenom, int userId) {
         this.nom = nom;
@@ -361,7 +386,10 @@ public class EspaceUtilisateurController {
                         ObservableList<String> items = FXCollections.observableArrayList();
                         for (int i = 0; i < meetingsArray.length(); i++) {
                             JSONObject meetingJson = meetingsArray.getJSONObject(i);
-                            String displayString = String.format("ID: %d - Titre: %s (Début: %s)",
+                            // New display format including meeting_code
+                            String meetingCode = meetingJson.optString("meeting_code", "N/A");
+                            String displayString = String.format("Code: %s - ID: %d - Titre: %s (Début: %s)",
+                                    meetingCode,
                                     meetingJson.optInt("id"),
                                     meetingJson.optString("titre", "Sans titre"),
                                     meetingJson.optString("debut", "N/A"));
@@ -370,7 +398,30 @@ public class EspaceUtilisateurController {
                         meetingsListView.setItems(items);
                     }
                 } else if ("creation".equals(actionOriginale)) {
-                    requestMeetingList(); // Refresh list after creation
+                    JSONObject nouvelleReunion = jsonResponse.optJSONObject("nouvelleReunion");
+                    if (nouvelleReunion != null) {
+                        String newReunionId = String.valueOf(nouvelleReunion.optInt("id"));
+                        String newReunionTitle = nouvelleReunion.optString("titre");
+                        String newReunionAgenda = nouvelleReunion.optString("agenda");
+                        String newMeetingCode = nouvelleReunion.optString("meeting_code", "N/A");
+                        
+                        navigateToReunionView(newReunionId, newReunionTitle, newReunionAgenda, newMeetingCode);
+                        requestMeetingList(); // Refresh list in background after navigating
+                    } else {
+                        showAlert(false, "Erreur Création", "Réponse de création de réunion invalide du serveur.");
+                        requestMeetingList(); 
+                    }
+                } else if ("rejoindreParCode".equals(actionOriginale)) {
+                    JSONObject reunionRejointe = jsonResponse.optJSONObject("reunion");
+                    if (reunionRejointe != null) {
+                        String reunionId = String.valueOf(reunionRejointe.optInt("id"));
+                        String title = reunionRejointe.optString("titre");
+                        String agenda = reunionRejointe.optString("agenda");
+                        String code = reunionRejointe.optString("meeting_code");
+                        navigateToReunionView(reunionId, title, agenda, code);
+                    } else {
+                         showAlert(false, "Erreur", "Détails de la réunion non reçus après avoir rejoint par code.");
+                    }
                 }
             } else { // "echec" or other
                 showAlert(false, "Échec (" + actionOriginale + ")", msg);

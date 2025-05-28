@@ -22,6 +22,7 @@
             <children>
                 <Label fx:id="reunionTitleLabel" style="-fx-font-weight: bold; -fx-font-size: 1.5em;" text="Titre de la Réunion" />
                 <Label fx:id="reunionAgendaLabel" text="Agenda: ..." wrapText="true" />
+                <Label fx:id="meetingCodeLabel" styleClass="detailsLabel" text="Code: Chargement..." />
             </children>
         </VBox>
 

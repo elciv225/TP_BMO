@@ -11,6 +11,7 @@ import java.sql.Timestamp;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID; // For generating meeting code
 
 public class ReunionManager {
     private Connection connection;
@@ -19,8 +20,15 @@ public class ReunionManager {
         this.connection = Database.getConnection();
     }
 
+    private static String genererMeetingCode() {
+        // Generates a code like "abc-def-ghi"
+        String uuid = UUID.randomUUID().toString();
+        return uuid.substring(0, 3) + "-" + uuid.substring(4, 7) + "-" + uuid.substring(8, 11);
+    }
+
     public Reunion planifierReunion(String nom, String sujet, String agenda, LocalDateTime debut, int duree, Reunion.Type type, int organisateurId, Integer animateurId) throws SQLException {
-        String sql = "INSERT INTO reunion (nom, sujet, agenda, debut, duree, type, organisateur_id, animateur_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
+        String meetingCode = genererMeetingCode();
+        String sql = "INSERT INTO reunion (nom, sujet, agenda, debut, duree, type, organisateur_id, animateur_id, meeting_code) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
         try (PreparedStatement pstmt = connection.prepareStatement(sql, PreparedStatement.RETURN_GENERATED_KEYS)) {
             pstmt.setString(1, nom);
             pstmt.setString(2, sujet);
@@ -29,11 +37,12 @@ public class ReunionManager {
             pstmt.setInt(5, duree);
             pstmt.setString(6, type.toString());
             pstmt.setInt(7, organisateurId);
-            if (animateurId != null) {
+            if (animateurId != null && animateurId != 0) { // Assuming 0 means no animator from model
                 pstmt.setInt(8, animateurId);
             } else {
                 pstmt.setNull(8, java.sql.Types.INTEGER);
             }
+            pstmt.setString(9, meetingCode); // Set the meeting code
             int affectedRows = pstmt.executeUpdate();
             if (affectedRows > 0) {
                 try (ResultSet generatedKeys = pstmt.getGeneratedKeys()) {
@@ -48,10 +57,11 @@ public class ReunionManager {
                 throw new SQLException("Creating meeting failed, no rows affected.");
             }
         }
+        // Removed duplicated return block from previous merge error
     }
 
     public Reunion consulterDetailsReunion(int reunionId) throws SQLException {
-        String sql = "SELECT id, nom, sujet, agenda, debut, duree, type, organisateur_id, animateur_id FROM reunion WHERE id = ?";
+        String sql = "SELECT id, nom, sujet, agenda, debut, duree, type, organisateur_id, animateur_id, meeting_code FROM reunion WHERE id = ?";
         try (PreparedStatement pstmt = connection.prepareStatement(sql)) {
             pstmt.setInt(1, reunionId);
             ResultSet rs = pstmt.executeQuery();
@@ -65,7 +75,8 @@ public class ReunionManager {
                         rs.getInt("duree"),
                         Reunion.Type.valueOf(rs.getString("type")),
                         rs.getInt("organisateur_id"),
-                        rs.getInt("animateur_id")
+                        rs.getInt("animateur_id"), // This is int from DB
+                        rs.getString("meeting_code")
                 );
             }
             return null;
@@ -119,7 +130,7 @@ public class ReunionManager {
 
     public List<Reunion> obtenirToutesReunions() throws SQLException {
         List<Reunion> reunions = new ArrayList<>();
-        String sql = "SELECT id, nom, sujet, agenda, debut, duree, type, organisateur_id, animateur_id FROM reunion";
+        String sql = "SELECT id, nom, sujet, agenda, debut, duree, type, organisateur_id, animateur_id, meeting_code FROM reunion";
         try (PreparedStatement pstmt = connection.prepareStatement(sql);
              ResultSet rs = pstmt.executeQuery()) {
             while (rs.next()) {
@@ -132,7 +143,8 @@ public class ReunionManager {
                         rs.getInt("duree"),
                         Reunion.Type.valueOf(rs.getString("type")),
                         rs.getInt("organisateur_id"),
-                        rs.getInt("animateur_id")
+                        rs.getInt("animateur_id"), // This is int from DB
+                        rs.getString("meeting_code")
                 ));
             }
         }
@@ -147,7 +159,7 @@ public class ReunionManager {
 
     public List<Reunion> obtenirReunionsOrganiseesPar(int organisateurId) throws SQLException {
         List<Reunion> reunions = new ArrayList<>();
-        String sql = "SELECT id, nom, sujet, agenda, debut, duree, type, organisateur_id, animateur_id FROM reunion WHERE organisateur_id = ?";
+        String sql = "SELECT id, nom, sujet, agenda, debut, duree, type, organisateur_id, animateur_id, meeting_code FROM reunion WHERE organisateur_id = ?";
         try (PreparedStatement pstmt = connection.prepareStatement(sql)) {
             pstmt.setInt(1, organisateurId);
             ResultSet rs = pstmt.executeQuery();
@@ -161,7 +173,8 @@ public class ReunionManager {
                         rs.getInt("duree"),
                         Reunion.Type.valueOf(rs.getString("type")),
                         rs.getInt("organisateur_id"),
-                        rs.getInt("animateur_id")
+                        rs.getInt("animateur_id"), // This is int from DB
+                        rs.getString("meeting_code")
                 ));
             }
         }
@@ -175,6 +188,47 @@ public class ReunionManager {
             pstmt.setInt(2, reunionId);
             int affectedRows = pstmt.executeUpdate();
             return affectedRows > 0;
+        }
+    }
+
+    public Reunion getReunionByCode(String code) throws SQLException {
+        String sql = "SELECT id, nom, sujet, agenda, debut, duree, type, organisateur_id, animateur_id, meeting_code FROM reunion WHERE meeting_code = ?";
+        try (PreparedStatement pstmt = connection.prepareStatement(sql)) {
+            pstmt.setString(1, code);
+            ResultSet rs = pstmt.executeQuery();
+            if (rs.next()) {
+                return new Reunion(
+                        rs.getInt("id"),
+                        rs.getString("nom"),
+                        rs.getString("sujet"),
+                        rs.getString("agenda"),
+                        rs.getTimestamp("debut").toLocalDateTime(),
+                        rs.getInt("duree"),
+                        Reunion.Type.valueOf(rs.getString("type")),
+                        rs.getInt("organisateur_id"),
+                        rs.getInt("animateur_id"),
+                        rs.getString("meeting_code")
+                );
+            }
+            return null;
+        }
+    }
+
+    public Reunion rejoindreReunionParCode(String code, int personneId) throws SQLException {
+        Reunion reunion = getReunionByCode(code);
+        if (reunion == null) {
+            throw new SQLException("Aucune réunion trouvée avec le code: " + code);
+        }
+
+        ParticipationManager participationManager = new ParticipationManager();
+        boolean success = participationManager.entrerDansReunion(personneId, reunion.getId());
+        
+        if (success) {
+            return reunion;
+        } else {
+            // This case might not be reachable if entrerDansReunion throws exception on real failure
+            // or handles duplicates by returning true.
+            throw new SQLException("Impossible de rejoindre la réunion avec le code: " + code + " pour la personne ID: " + personneId);
         }
     }
 }

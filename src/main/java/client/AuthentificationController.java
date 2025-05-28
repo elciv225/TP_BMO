@@ -32,8 +32,8 @@ public class AuthentificationController {
 
     @FXML
     public void initialize() {
-        clientWebSocket = new ClientWebSocket();
-        clientWebSocket.setControllerAuth(this); // Lien entre le controleur et le client WebSocket
+        // clientWebSocket = new ClientWebSocket(); // Removed: Instance should be passed in
+        // clientWebSocket.setControllerAuth(this); // Removed: Registration handled by the passer
     }
 
     @FXML
@@ -82,12 +82,12 @@ public class AuthentificationController {
                             .orElse(null);
                     FXMLLoader loader = new FXMLLoader(getClass().getResource("/espaceUtilisateur.fxml"));
                     Parent root = loader.load();
-                    EspaceUtilisateurController espcController = loader.getController();
+                    EspaceUtilisateurController espaceUtilisateurController = loader.getController(); // Get controller instance
+                    // Pass the shared ClientWebSocket instance
+                    espaceUtilisateurController.setClientWebSocket(this.clientWebSocket);
+                    
                     stage.setScene(new Scene(root));
                     stage.show();
-
-                    // Get the controller for the loaded FXML
-                    EspaceUtilisateurController espaceUtilisateurController = loader.getController();
 
                     // Extract Nom and Prenom from the personne JSON
                     JSONObject personneJson = jsonResponse.optJSONObject("personne");

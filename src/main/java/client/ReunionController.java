@@ -21,13 +21,15 @@ public class ReunionController {
     @FXML private Label connectionStatus;
     @FXML private Label reunionTitleLabel;
     @FXML private Label reunionAgendaLabel;
+    @FXML private Label meetingCodeLabel; // Added for meeting code
     @FXML private Button exitMeetingButton;
-    @FXML private TextField messageInput; // Added
-    @FXML private Button sendButton; // Added
-    @FXML private VBox messageArea; // Added
+    @FXML private TextField messageInput; 
+    @FXML private Button sendButton; 
+    @FXML private VBox messageArea; 
 
     private ClientWebSocket clientWebSocket;
     private String currentMeetingId; 
+    private String currentMeetingCode; // Added
 
     @FXML
     public void initialize() {
@@ -47,15 +49,20 @@ public class ReunionController {
         }
     }
     
-    public void setMeetingData(String meetingId, String title, String agenda) {
+    public void setMeetingData(String meetingId, String title, String agenda, String meetingCode) { // Added meetingCode
         this.currentMeetingId = meetingId;
+        this.currentMeetingCode = meetingCode; // Store it
+
         if (reunionTitleLabel != null) {
             reunionTitleLabel.setText(title);
         }
         if (reunionAgendaLabel != null) {
-            reunionAgendaLabel.setText("Agenda: " + (agenda != null ? agenda : "Non défini"));
+            reunionAgendaLabel.setText("Agenda: " + (agenda != null && !agenda.isEmpty() ? agenda : "Non défini"));
         }
-        if (messageArea != null) { // Clear previous messages
+        if (meetingCodeLabel != null) {
+            meetingCodeLabel.setText("Code: " + (meetingCode != null && !meetingCode.isEmpty() ? meetingCode : "N/A"));
+        }
+        if (messageArea != null) { 
             messageArea.getChildren().clear();
         }
 

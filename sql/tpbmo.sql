@@ -22,7 +22,8 @@ CREATE TABLE IF NOT EXISTS reunion
     duree           INT                                       NOT NULL,
     type            ENUM ('STANDARD','PRIVEE','DEMOCRATIQUE') NOT NULL,
     organisateur_id INT                                       NOT NULL,
-    animateur_id    INT
+    animateur_id    INT,
+    meeting_code    VARCHAR(11) UNIQUE NOT NULL
 );
 
 -- Table pour l'association entre personnes et réunions (participation)
