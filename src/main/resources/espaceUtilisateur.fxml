@@ -16,6 +16,11 @@
     <VBox spacing="10.0" VBox.vgrow="ALWAYS">
         <Label text="Liste des Réunions:" style="-fx-font-weight: bold; -fx-font-size: 14px;" />
         <ListView fx:id="meetingsListView" prefHeight="150.0" VBox.vgrow="ALWAYS"/>
+        <Button fx:id="enterMeetingButton" text="Entrer dans la Réunion Sélectionnée" onAction="#handleEnterMeeting" maxWidth="Infinity" minHeight="30.0">
+            <VBox.margin>
+                <Insets top="5.0" bottom="10.0" />
+            </VBox.margin>
+        </Button>
 
         <Label text="Inviter un utilisateur à la réunion sélectionnée:" style="-fx-font-weight: bold; -fx-font-size: 14px;"/>
         <HBox spacing="5.0">
