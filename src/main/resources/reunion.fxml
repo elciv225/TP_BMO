@@ -8,37 +8,50 @@
 <?import javafx.scene.layout.HBox?>
 <?import javafx.scene.layout.VBox?>
 
-<!-- Root VBox uses both page-container for common layout and reunion-container for specific overrides -->
-<VBox fx:id="reunionContainer" styleClass="page-container, reunion-container" maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="400.0" prefWidth="600.0" stylesheets="@styles/main.css" xmlns="http://javafx.com/javafx/23.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="client.ReunionController">
-    <padding>
-        <!-- Padding is now handled by .page-container or .reunion-container, removing inline -->
-        <Insets bottom="0" left="0" right="0" top="0" />
-    </padding>
+<!-- Interface de réunion avec style WhatsApp -->
+<VBox fx:id="reunionContainer" styleClass="reunion-container" maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="600.0" prefWidth="800.0" stylesheets="@styles/main.css" xmlns="http://javafx.com/javafx/23.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="client.ReunionController">
     <children>
-        <Label fx:id="connectionStatus" styleClass="connectionStatus" text="État de la connexion: Non connecté" />
+        <!-- En-tête de la réunion avec statut de connexion -->
+        <Label fx:id="connectionStatus" styleClass="connectionStatus, connected" text="Connecté à la réunion" prefHeight="50.0" maxWidth="Infinity">
+            <padding>
+                <Insets top="15.0" bottom="15.0" left="20.0" right="20.0"/>
+            </padding>
+        </Label>
 
-        <ScrollPane fitToWidth="true" prefHeight="300.0" prefWidth="580.0">
+        <!-- Zone de messages principale avec scroll -->
+        <ScrollPane fitToWidth="true" VBox.vgrow="ALWAYS" styleClass="scroll-pane" prefHeight="400.0">
             <content>
-                <VBox fx:id="messageArea" styleClass="messageArea" />
+                <VBox fx:id="messageArea" styleClass="messageArea" spacing="8.0">
+                    <padding>
+                        <Insets top="15.0" bottom="15.0" left="15.0" right="15.0"/>
+                    </padding>
+                </VBox>
             </content>
         </ScrollPane>
 
-        <HBox fx:id="inputArea" alignment="CENTER_LEFT" spacing="5.0">
+        <!-- Zone d'invitation (visible uniquement pour l'organisateur) -->
+        <HBox fx:id="invitationArea" alignment="CENTER_LEFT" spacing="15.0" styleClass="invitation-area" managed="false" visible="false" prefHeight="60.0">
+            <padding>
+                <Insets top="12.0" bottom="12.0" left="20.0" right="20.0"/>
+            </padding>
             <children>
-                <TextField fx:id="messageInput" styleClass="styled-text-field" prefHeight="30.0" prefWidth="400.0" promptText="Tapez votre message ici..." />
-                <Button fx:id="sendButton" styleClass="primary-button" mnemonicParsing="false" text="Envoyer" />
+                <Label text="👥 Inviter un participant:" styleClass="field-label" minWidth="-Infinity"/>
+                <TextField fx:id="inviteUserField" styleClass="styled-text-field, invite-user-field" prefHeight="35.0" prefWidth="250.0" promptText="Nom d'utilisateur à inviter" />
+                <Button fx:id="inviteButton" styleClass="invite-button" mnemonicParsing="false" text="Inviter" prefHeight="35.0" minWidth="80.0"/>
             </children>
         </HBox>
 
-        <!-- Invitation Area -->
-        <HBox fx:id="invitationArea" alignment="CENTER_LEFT" spacing="5.0" styleClass="invitation-area">
+        <!-- Zone de saisie de message style WhatsApp -->
+        <HBox fx:id="inputArea" alignment="CENTER_LEFT" spacing="12.0" prefHeight="70.0" maxHeight="70.0" minHeight="70.0">
             <padding>
-                <Insets top="10.0" />
+                <Insets top="15.0" bottom="15.0" left="20.0" right="20.0"/>
             </padding>
             <children>
-                <TextField fx:id="inviteUserField" styleClass="styled-text-field, invite-user-field" prefHeight="30.0" prefWidth="300.0" promptText="Enter username to invite" />
-                <Button fx:id="inviteButton" styleClass="primary-button, invite-button" mnemonicParsing="false" text="Invite" />
-                 <!-- invite-user-field and invite-button are kept for potential specific styling not covered by utility classes -->
+                <!-- Champ de saisie du message -->
+                <TextField fx:id="messageInput" prefHeight="40.0" HBox.hgrow="ALWAYS" promptText="Tapez votre message ici..." minWidth="200.0"/>
+
+                <!-- Bouton d'envoi -->
+                <Button fx:id="sendButton" mnemonicParsing="false" text="📤" prefWidth="50.0" prefHeight="40.0" minWidth="50.0" maxWidth="50.0"/>
             </children>
         </HBox>
     </children>

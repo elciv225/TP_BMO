@@ -357,7 +357,7 @@ public class EspaceUtilisateurController {
     }
 
     /**
-     * CORRECTION: Gestion spécifique des réponses de réunion
+     * CORRECTION: Gestion spécifique des réponses de réunion avec redirection auto
      */
     private void handleReunionResponse(String action, String statut, String message, JSONObject jsonResponse) {
         System.out.println("Réponse réunion reçue - Action: " + action + ", Statut: " + statut);
@@ -365,12 +365,23 @@ public class EspaceUtilisateurController {
         switch (action) {
             case "reponseCreation":
                 if ("succes".equals(statut)) {
-                    showAlert(true, "Réunion créée", message);
                     JSONObject reunionData = jsonResponse.optJSONObject("reunion");
                     if (reunionData != null) {
-                        System.out.println("Réunion créée avec ID: " + reunionData.optInt("id"));
-                        // Optionnel: ouvrir automatiquement l'interface de réunion
-                        // ouvrirInterfaceReunion(String.valueOf(reunionData.optInt("id")));
+                        int reunionId = reunionData.optInt("id");
+                        boolean autoJoin = jsonResponse.optBoolean("autoJoin", false);
+
+                        System.out.println("Réunion créée avec ID: " + reunionId);
+
+                        if (autoJoin && reunionId > 0) {
+                            // NOUVEAU: Redirection automatique vers l'interface de réunion
+                            Platform.runLater(() -> {
+                                ouvrirInterfaceReunion(String.valueOf(reunionId), true);
+                            });
+                        } else {
+                            showAlert(true, "Réunion créée", message + " (ID: " + reunionId + ")");
+                        }
+                    } else {
+                        showAlert(true, "Réunion créée", message);
                     }
                 } else {
                     showAlert(false, "Erreur de création", message);
@@ -403,25 +414,47 @@ public class EspaceUtilisateurController {
     }
 
     /**
-     * Ouvre l'interface de réunion
+     * NOUVEAU: Ouvre l'interface de réunion avec gestion améliorée
      */
-    private void ouvrirInterfaceReunion(String reunionId) {
+    private void ouvrirInterfaceReunion(String reunionId, boolean isCreator) {
         try {
             FXMLLoader loader = new FXMLLoader(getClass().getResource("/reunion.fxml"));
             Parent root = loader.load();
 
             ReunionController reunionController = loader.getController();
-            reunionController.initData(reunionId, userId, -1, clientWebSocket);
+
+            // Déterminer l'ID organisateur
+            int organizateurId = isCreator ? userId : -1;
+
+            // Passer le nom complet de l'utilisateur
+            String fullName = (nom != null && prenom != null) ? nom + " " + prenom : "Utilisateur";
+
+            // NOUVEAU: Initialiser avec le nom d'utilisateur
+            reunionController.initData(reunionId, userId, organizateurId, clientWebSocket, fullName);
 
             Stage stage = new Stage();
-            stage.setTitle("Réunion - " + reunionId);
+            stage.setTitle("Réunion - " + reunionId + (isCreator ? " (Organisateur)" : ""));
             stage.setScene(new Scene(root));
+
+            // Gérer la fermeture proprement
+            stage.setOnCloseRequest(event -> {
+                reunionController.cleanup();
+            });
+
             stage.show();
 
         } catch (IOException e) {
             System.err.println("Erreur lors de l'ouverture de l'interface de réunion: " + e.getMessage());
+            e.printStackTrace();
             showAlert(false, "Erreur", "Impossible d'ouvrir l'interface de réunion.");
         }
+    }
+
+    /**
+     * Version compatible avec l'ancienne méthode
+     */
+    private void ouvrirInterfaceReunion(String reunionId) {
+        ouvrirInterfaceReunion(reunionId, false);
     }
 
     public void showAlert(boolean success, String titre, String message) {

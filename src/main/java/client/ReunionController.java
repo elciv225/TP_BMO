@@ -3,6 +3,8 @@ package client;
 import javafx.animation.FadeTransition;
 import javafx.application.Platform;
 import javafx.fxml.FXML;
+import javafx.geometry.Insets;
+import javafx.geometry.Pos;
 import javafx.scene.Node;
 import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
@@ -12,6 +14,9 @@ import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
 import javafx.util.Duration;
 import org.json.JSONObject;
+
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 
 public class ReunionController {
 
@@ -31,6 +36,7 @@ public class ReunionController {
     private int currentUserId = -1;
     private int organizerId = -1;
     private boolean isInitialized = false;
+    private String currentUserName = "";
 
     @FXML
     public void initialize() {
@@ -38,9 +44,6 @@ public class ReunionController {
         applyFadeInAnimation(reunionContainer);
     }
 
-    /**
-     * Configure les gestionnaires d'événements pour les composants FXML
-     */
     private void setupEventHandlers() {
         if (sendButton != null) {
             sendButton.setOnAction(event -> envoyerMessage());
@@ -60,9 +63,9 @@ public class ReunionController {
     }
 
     /**
-     * Initialise le contrôleur avec les données nécessaires
+     * NOUVEAU: Initialise avec les données de l'utilisateur connecté
      */
-    public void initData(String reunionId, int userId, int organizerId, ClientWebSocket webSocket) {
+    public void initData(String reunionId, int userId, int organizerId, ClientWebSocket webSocket, String userName) {
         if (isInitialized) {
             System.out.println("ReunionController déjà initialisé, ignoré.");
             return;
@@ -72,20 +75,28 @@ public class ReunionController {
         this.currentUserId = userId;
         this.organizerId = organizerId;
         this.clientWebSocket = webSocket;
+        this.currentUserName = userName != null ? userName : "Utilisateur";
         this.isInitialized = true;
 
-        // Configuration de la visibilité des invitations
-        configureInvitationVisibility();
+        // NOUVEAU: Configurer la session WebSocket avec les IDs de réunion
+        if (webSocket != null && webSocket.getSessionAuth() != null) {
+            webSocket.getSessionAuth().getUserProperties().put("reunionId", reunionId);
+            webSocket.getSessionAuth().getUserProperties().put("userId", String.valueOf(userId));
+        }
 
-        // Configuration du statut de connexion
+        configureInvitationVisibility();
         updateConnectionStatus("Connecté à la réunion: " + reunionId, true);
 
-        System.out.println("ReunionController initialisé - Réunion: " + reunionId + ", Utilisateur: " + userId);
+        System.out.println("ReunionController initialisé - Réunion: " + reunionId + ", Utilisateur: " + userId + " (" + userName + ")");
     }
 
     /**
-     * Configure la visibilité de la zone d'invitation selon les permissions
+     * Version compatible avec l'ancienne méthode
      */
+    public void initData(String reunionId, int userId, int organizerId, ClientWebSocket webSocket) {
+        initData(reunionId, userId, organizerId, webSocket, "Utilisateur");
+    }
+
     private void configureInvitationVisibility() {
         if (invitationArea != null) {
             boolean isOrganizer = (this.currentUserId == this.organizerId && this.currentUserId != -1);
@@ -94,26 +105,18 @@ public class ReunionController {
         }
     }
 
-    /**
-     * Met à jour le statut de connexion
-     */
     private void updateConnectionStatus(String message, boolean isConnected) {
         if (connectionStatus != null) {
             Platform.runLater(() -> {
                 connectionStatus.setText(message);
-                if (isConnected) {
-                    connectionStatus.getStyleClass().remove("disconnected");
-                    connectionStatus.getStyleClass().add("connected");
-                } else {
-                    connectionStatus.getStyleClass().remove("connected");
-                    connectionStatus.getStyleClass().add("disconnected");
-                }
+                connectionStatus.getStyleClass().removeAll("connected", "disconnected");
+                connectionStatus.getStyleClass().add(isConnected ? "connected" : "disconnected");
             });
         }
     }
 
     /**
-     * Traite les messages reçus du serveur
+     * NOUVEAU: Traite les messages reçus avec style WhatsApp
      */
     public void traiterMessageRecu(String message) {
         if (message == null || message.trim().isEmpty()) {
@@ -128,7 +131,7 @@ public class ReunionController {
             Platform.runLater(() -> {
                 switch (messageType) {
                     case "newMessage":
-                        handleNewMessage(json);
+                        handleNewMessageWhatsApp(json);
                         break;
                     case "invitationResult":
                         handleInvitationResult(json);
@@ -153,25 +156,78 @@ public class ReunionController {
     }
 
     /**
-     * Gère les nouveaux messages de chat
+     * NOUVEAU: Gère les messages avec style WhatsApp
      */
-    private void handleNewMessage(JSONObject json) {
+    private void handleNewMessageWhatsApp(JSONObject json) {
         String sender = json.optString("sender", "Inconnu");
         String content = json.optString("content", "");
+        String userIdStr = json.optString("userId", "");
+        long timestamp = json.optLong("timestamp", System.currentTimeMillis());
 
-        if (!content.isEmpty()) {
-            Label messageLabel = new Label(sender + ": " + content);
-            messageLabel.getStyleClass().add("message-bubble");
+        if (content.isEmpty()) return;
 
-            if (messageArea != null) {
-                messageArea.getChildren().add(messageLabel);
-            }
+        // Créer le conteneur du message
+        VBox messageContainer = new VBox();
+        messageContainer.setSpacing(2);
+        messageContainer.getStyleClass().add("message-container");
+
+        // Vérifier si c'est notre message
+        boolean isOwnMessage = userIdStr.equals(String.valueOf(currentUserId));
+
+        // Créer la bulle de message
+        Label messageLabel = new Label(content);
+        messageLabel.setWrapText(true);
+        messageLabel.setMaxWidth(300);
+
+        if (isOwnMessage) {
+            messageLabel.getStyleClass().add("message-bubble-sent");
+            messageContainer.setAlignment(Pos.CENTER_RIGHT);
+        } else {
+            messageLabel.getStyleClass().add("message-bubble-received");
+            messageContainer.setAlignment(Pos.CENTER_LEFT);
+
+            // Ajouter le nom de l'expéditeur pour les messages reçus
+            Label senderLabel = new Label(sender);
+            senderLabel.getStyleClass().add("message-sender");
+            messageContainer.getChildren().add(senderLabel);
+        }
+
+        messageContainer.getChildren().add(messageLabel);
+
+        // Ajouter l'heure
+        String timeStr = LocalDateTime.now().format(DateTimeFormatter.ofPattern("HH:mm"));
+        Label timeLabel = new Label(timeStr);
+        timeLabel.getStyleClass().add("message-time");
+
+        if (isOwnMessage) {
+            timeLabel.setAlignment(Pos.CENTER_RIGHT);
+        } else {
+            timeLabel.setAlignment(Pos.CENTER_LEFT);
+        }
+
+        messageContainer.getChildren().add(timeLabel);
+
+        // Ajouter à la zone de messages
+        if (messageArea != null) {
+            messageArea.getChildren().add(messageContainer);
+
+            // Animation d'apparition
+            messageContainer.setOpacity(0);
+            FadeTransition fadeIn = new FadeTransition(Duration.millis(300), messageContainer);
+            fadeIn.setFromValue(0);
+            fadeIn.setToValue(1);
+            fadeIn.play();
+
+            // Scroll automatique vers le bas
+            Platform.runLater(() -> {
+                if (messageArea.getParent() instanceof javafx.scene.control.ScrollPane) {
+                    javafx.scene.control.ScrollPane scrollPane = (javafx.scene.control.ScrollPane) messageArea.getParent();
+                    scrollPane.setVvalue(1.0);
+                }
+            });
         }
     }
 
-    /**
-     * Gère les résultats d'invitation
-     */
     private void handleInvitationResult(JSONObject json) {
         boolean success = json.optBoolean("success", false);
         String message = json.optString("message", "Aucun message du serveur");
@@ -183,43 +239,41 @@ public class ReunionController {
         alert.showAndWait();
     }
 
-    /**
-     * Gère l'arrivée d'un nouvel utilisateur
-     */
     private void handleUserJoined(JSONObject json) {
         String username = json.optString("username", "Utilisateur inconnu");
-        Label joinLabel = new Label("📥 " + username + " a rejoint la réunion");
-        joinLabel.getStyleClass().add("system-message");
-
-        if (messageArea != null) {
-            messageArea.getChildren().add(joinLabel);
-        }
+        addSystemMessage("📥 " + username + " a rejoint la réunion");
     }
 
-    /**
-     * Gère le départ d'un utilisateur
-     */
     private void handleUserLeft(JSONObject json) {
         String username = json.optString("username", "Utilisateur inconnu");
-        Label leaveLabel = new Label("📤 " + username + " a quitté la réunion");
-        leaveLabel.getStyleClass().add("system-message");
-
-        if (messageArea != null) {
-            messageArea.getChildren().add(leaveLabel);
-        }
+        addSystemMessage("📤 " + username + " a quitté la réunion");
     }
 
-    /**
-     * Gère les messages d'erreur du serveur
-     */
     private void handleError(JSONObject json) {
         String errorMessage = json.optString("message", "Erreur inconnue");
         showAlert(Alert.AlertType.ERROR, "Erreur", errorMessage);
     }
 
     /**
-     * Envoie un message de chat
+     * NOUVEAU: Ajoute un message système style WhatsApp
      */
+    private void addSystemMessage(String message) {
+        Platform.runLater(() -> {
+            VBox systemContainer = new VBox();
+            systemContainer.setAlignment(Pos.CENTER);
+            systemContainer.setPadding(new Insets(5, 0, 5, 0));
+
+            Label systemLabel = new Label(message);
+            systemLabel.getStyleClass().add("system-message");
+
+            systemContainer.getChildren().add(systemLabel);
+
+            if (messageArea != null) {
+                messageArea.getChildren().add(systemContainer);
+            }
+        });
+    }
+
     @FXML
     private void envoyerMessage() {
         if (!isInitialized) {
@@ -243,23 +297,22 @@ public class ReunionController {
             JSONObject messageJson = new JSONObject();
             messageJson.put("modele", "reunion");
             messageJson.put("action", "envoyerMessage");
-            messageJson.put("reunionId", String.valueOf(currentReunionId));
+            messageJson.put("reunionId", currentReunionId);
             messageJson.put("userId", String.valueOf(currentUserId));
             messageJson.put("contenu", messageText.trim());
 
+            System.out.println("Envoi du message: " + messageJson.toString());
             clientWebSocket.envoyerRequete(messageJson.toString());
             messageInput.clear();
 
         } catch (Exception e) {
             System.err.println("Erreur lors de l'envoi du message: " + e.getMessage());
+            e.printStackTrace();
             showAlert(Alert.AlertType.ERROR, "Erreur",
                      "Impossible d'envoyer le message: " + e.getMessage());
         }
     }
 
-    /**
-     * Gère l'invitation d'un utilisateur
-     */
     @FXML
     private void handleInviteUser() {
         if (!isInitialized) {
@@ -275,7 +328,6 @@ public class ReunionController {
             return;
         }
 
-        // Vérifier les permissions
         if (currentUserId != organizerId) {
             showAlert(Alert.AlertType.ERROR, "Permission refusée",
                      "Seul l'organisateur peut inviter des membres.");
@@ -292,7 +344,7 @@ public class ReunionController {
             JSONObject inviteJson = new JSONObject();
             inviteJson.put("modele", "reunion");
             inviteJson.put("action", "inviterMembre");
-            inviteJson.put("reunionId", String.valueOf(currentReunionId));
+            inviteJson.put("reunionId", currentReunionId);
             inviteJson.put("usernameToInvite", usernameToInvite.trim());
 
             clientWebSocket.envoyerRequete(inviteJson.toString());
@@ -305,9 +357,6 @@ public class ReunionController {
         }
     }
 
-    /**
-     * Applique une animation de fondu à l'ouverture
-     */
     private void applyFadeInAnimation(Node node) {
         if (node != null) {
             node.setOpacity(0.0);
@@ -320,9 +369,6 @@ public class ReunionController {
         }
     }
 
-    /**
-     * Affiche une alerte avec le type, titre et message spécifiés
-     */
     private void showAlert(Alert.AlertType type, String title, String message) {
         Platform.runLater(() -> {
             Alert alert = new Alert(type);
@@ -333,17 +379,13 @@ public class ReunionController {
         });
     }
 
-    /**
-     * Nettoie les ressources avant la fermeture
-     */
     public void cleanup() {
         if (clientWebSocket != null) {
             try {
-                // Envoyer une notification de déconnexion
                 JSONObject leaveJson = new JSONObject();
                 leaveJson.put("modele", "reunion");
                 leaveJson.put("action", "quitterReunion");
-                leaveJson.put("reunionId", String.valueOf(currentReunionId));
+                leaveJson.put("reunionId", currentReunionId);
                 leaveJson.put("userId", String.valueOf(currentUserId));
 
                 clientWebSocket.envoyerRequete(leaveJson.toString());
@@ -352,7 +394,6 @@ public class ReunionController {
             }
         }
 
-        // Réinitialiser les variables
         isInitialized = false;
         clientWebSocket = null;
         currentReunionId = null;
@@ -360,7 +401,7 @@ public class ReunionController {
         organizerId = -1;
     }
 
-    // Getters pour les tests et le debugging
+    // Getters
     public String getCurrentReunionId() {
         return currentReunionId;
     }
