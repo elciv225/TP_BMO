@@ -4,6 +4,8 @@ import model.Personne;
 import model.PersonneManager;
 import model.Reunion;
 import model.ReunionManager;
+import model.ParticipationManager; // Added
+import org.json.JSONArray; // Added
 import org.json.JSONObject;
 
 import javax.websocket.Session;
@@ -97,7 +99,9 @@ public class ReunionService implements WebSocketAction {
                 } catch (IllegalArgumentException e) {
                     return genererReponseErreur("Type de réunion invalide: " + typeStr, actionOriginale);
                 }
-                Integer idAnimateur = data.has("idAnimateur") ? data.optInt("idAnimateur") : null;
+                // Corrected idAnimateur parsing for planifierReunion which expects Integer (null if not set)
+                int idAnimateurInt = data.optInt("idAnimateur", 0); // Default to 0 if not present/not an int
+                Integer idAnimateur = (idAnimateurInt == 0) ? null : idAnimateurInt;
 
 
                 ReunionManager reunionManager = new ReunionManager();
@@ -107,7 +111,7 @@ public class ReunionService implements WebSocketAction {
 
                 reponseJson.put("statut", "succes");
                 reponseJson.put("message", "Réunion '" + nouvelleReunion.getNom() + "' créée avec succès.");
-                reponseJson.put("reunion", new JSONObject()
+                JSONObject reunionDetails = new JSONObject()
                         .put("id", nouvelleReunion.getId())
                         .put("titre", nouvelleReunion.getNom())
                         .put("sujet", nouvelleReunion.getSujet())
@@ -115,11 +119,12 @@ public class ReunionService implements WebSocketAction {
                         .put("debut", nouvelleReunion.getDebut().toString())
                         .put("duree", nouvelleReunion.getDuree())
                         .put("type", nouvelleReunion.getType().toString())
-                        .put("idOrganisateur", nouvelleReunion.getIdOrganisateur())
-                );
-
-                        .putOpt("idAnimateur", nouvelleReunion.getIdAnimateur())
-                );
+                        .put("idOrganisateur", nouvelleReunion.getIdOrganisateur());
+                Integer idAnim = nouvelleReunion.getIdAnimateur();
+                if (idAnim != null && idAnim.intValue() != 0) {
+                     reunionDetails.put("idAnimateur", idAnim);
+                }
+                reponseJson.put("reunion", reunionDetails);
 
             } catch (SQLException e) {
                 System.err.println("Erreur SQL (création réunion): " + e.getMessage());
@@ -143,51 +148,61 @@ public class ReunionService implements WebSocketAction {
                 String codeReunion = data.optString("code");
                 String participant = data.optString("participant");
 
-                // Logique à implémenter pour rejoindre une réunion
-                // Pour l'instant, une réponse de succès simulée
-                reponseJson.put("statut", "succes");
-                reponseJson.put("message", "Vous avez rejoint la réunion " + codeReunion);
+                // TODO: Actual logic for joining a meeting
+                reponseJson.put("statut", "succes"); // Assuming success for now
+                reponseJson.put("message", "Fonctionnalité 'rejoindre' (pour " + participant + " à " + codeReunion + ") à implémenter.");
 
             } catch (Exception e) {
-                System.err.println("Erreur lors de la jonction de réunion : " + e.getMessage());
-                // Note: genererReponseErreur returns a String, so we must put its content into the JSON
-                JSONObject errorDetails = new JSONObject(genererReponseErreur("Erreur lors de la jonction de réunion"));
-                reponseJson.put("statut", errorDetails.optString("statut", "echec"));
-                reponseJson.put("message", errorDetails.optString("message", "Erreur lors de la jonction de réunion"));
+                 System.err.println("Erreur (rejoindreRéunion): " + e.getMessage());
+                 e.printStackTrace();
+                // Corrected call to genererReponseErreur
+                return genererReponseErreur("Erreur serveur lors de la tentative de rejoindre: " + e.getMessage(), actionOriginale);
             }
             return reponseJson.toString();
         }, Database.getDbExecutor());
     }
 
-    private CompletableFuture<String> obtenirDetailsReunionAsync(JSONObject data) {
+    private CompletableFuture<String> obtenirDetailsReunionAsync(JSONObject data, String actionOriginale) {
         return CompletableFuture.supplyAsync(() -> {
             JSONObject reponseJson = new JSONObject();
             reponseJson.put("modele", "reunion");
-            reponseJson.put("action", "reponseDetails");
+            reponseJson.put("actionOriginale", actionOriginale); 
 
             try {
-                int reunionId = data.optInt("id");
+                int reunionId = data.getInt("id");
                 ReunionManager reunionManager = new ReunionManager();
                 Reunion reunion = reunionManager.consulterDetailsReunion(reunionId);
 
                 if (reunion != null) {
                     reponseJson.put("statut", "succes");
-                    reponseJson.put("reunion", new JSONObject()
+                    JSONObject reunionDetails = new JSONObject()
                             .put("id", reunion.getId())
                             .put("titre", reunion.getNom())
                             .put("sujet", reunion.getSujet())
+                            .put("agenda", reunion.getAgenda()) 
                             .put("debut", reunion.getDebut().toString())
                             .put("duree", reunion.getDuree())
-                    );
+                            .put("type", reunion.getType().toString())
+                            .put("idOrganisateur", reunion.getIdOrganisateur());
+                    Integer idAnimDetails = reunion.getIdAnimateur();
+                    if (idAnimDetails != null && idAnimDetails.intValue() != 0) { 
+                        reunionDetails.put("idAnimateur", idAnimDetails);
+                    }
+                    reponseJson.put("reunion", reunionDetails);
                 } else {
-                    // Return the error JSON string directly as per original logic
-                    return genererReponseErreur("Réunion non trouvée");
+                    return genererReponseErreur("Réunion non trouvée pour ID: " + reunionId, actionOriginale);
                 }
 
             } catch (SQLException e) {
-                System.err.println("Erreur lors de la récupération des détails de réunion : " + e.getMessage());
-                // Return the error JSON string directly
-                return genererReponseErreur("Erreur interne lors de la récupération des détails");
+                System.err.println("Erreur SQL (détails réunion): " + e.getMessage());
+                return genererReponseErreur("Erreur base de données (détails): " + e.getMessage(), actionOriginale);
+            } catch (org.json.JSONException e) {
+                 System.err.println("Erreur JSON (détails réunion): " + e.getMessage());
+                return genererReponseErreur("Données de détails mal formatées: " + e.getMessage(), actionOriginale);
+            } catch (Exception e) {
+                System.err.println("Erreur (détails réunion): " + e.getMessage());
+                e.printStackTrace();
+                return genererReponseErreur("Erreur serveur (détails): " + e.getMessage(), actionOriginale);
             }
             return reponseJson.toString();
         }, Database.getDbExecutor());
@@ -215,8 +230,9 @@ public class ReunionService implements WebSocketAction {
                     meetingJson.put("duree", r.getDuree());
                     meetingJson.put("type", r.getType().toString());
                     meetingJson.put("idOrganisateur", r.getIdOrganisateur());
-                    if (r.getIdAnimateur() != null && r.getIdAnimateur() != 0) { // Check for null or 0 if DB uses 0 for non-existent
-                        meetingJson.put("idAnimateur", r.getIdAnimateur());
+                    Integer idAnimList = r.getIdAnimateur();
+                    if (idAnimList != null && idAnimList.intValue() != 0) { 
+                        meetingJson.put("idAnimateur", idAnimList);
                     }
                     reunionsArray.put(meetingJson);
                 }

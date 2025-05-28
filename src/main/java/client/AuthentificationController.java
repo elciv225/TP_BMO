@@ -94,8 +94,9 @@ public class AuthentificationController {
                     if (personneJson != null) {
                         String nom = personneJson.optString("nom");
                         String prenom = personneJson.optString("prenom");
+                        int id = personneJson.optInt("id", -1); // Assuming 'id' is the field name for user ID
                         // Pass the data to the EspaceUtilisateurController
-                        espaceUtilisateurController.setUserInfo(nom, prenom);
+                        espaceUtilisateurController.setUserInfo(nom, prenom, id);
                     }
 
                 } catch (IOException e) {

@@ -1,6 +1,6 @@
 package serveur;
 
-import java.io.IOException;
+// import java.io.IOException; // Will be removed if no longer needed
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
@@ -66,11 +66,8 @@ public class ServeurWebSocket {
             // If ActionHandler directly uses the session to send messages,
             // those parts would need to be updated as well.
             // For now, this subtask only focuses on ServeurWebSocket.java
-            try {
-                ActionHandler.handleAction(message, session);
-            } catch (IOException e) { // ActionHandler might still throw IOException for other reasons
-                e.printStackTrace();
-            }
+            // ActionHandler.handleAction no longer throws IOException directly
+            ActionHandler.handleAction(message, session);
         }
 
         @OnClose

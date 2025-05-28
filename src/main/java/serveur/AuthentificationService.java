@@ -5,53 +5,98 @@ import model.PersonneManager;
 import org.json.JSONObject;
 
 import javax.websocket.Session;
-import java.io.IOException;
+import javax.websocket.SendHandler;
+import javax.websocket.SendResult;
+// import java.io.IOException; // No longer thrown by execute
 import java.sql.SQLException;
+import java.util.concurrent.CompletableFuture;
 
-public class AuthentificationService implements WebSocketAction{
+public class AuthentificationService implements WebSocketAction {
     @Override
-    public void execute(JSONObject data, Session session) throws IOException {
+    public void execute(JSONObject data, Session session) { // Removed throws IOException
         String action = data.optString("action");
-        String reponse;
-        switch (action){
+        final String actionOriginale = action; // For context in async blocks
+        CompletableFuture<String> futureReponse;
+
+        switch (action) {
             case "connexion":
-                reponse = connexion(data);
+                futureReponse = connexionAsync(data, actionOriginale);
                 break;
             default:
-                reponse = "Erreur: Action inconnue '" + action + "'";
+                JSONObject errorJson = new JSONObject();
+                errorJson.put("modele", "authentification");
+                errorJson.put("actionOriginale", actionOriginale);
+                errorJson.put("statut", "echec");
+                errorJson.put("message", "Action d'authentification inconnue '" + action + "'");
+                futureReponse = CompletableFuture.completedFuture(errorJson.toString());
         }
-        // Envoie de la reponse au client
-        session.getBasicRemote().sendText(reponse);
+
+        futureReponse.thenAcceptAsync(reponseString -> {
+            session.getAsyncRemote().sendText(reponseString, new SendHandler() {
+                @Override
+                public void onResult(SendResult result) {
+                    if (!result.isOK()) {
+                        System.err.println("Erreur envoi message async dans AuthentificationService (" + actionOriginale + "): " + result.getException());
+                        if (result.getException() != null) {
+                            result.getException().printStackTrace();
+                        }
+                    }
+                }
+            });
+        }).exceptionally(ex -> {
+            System.err.println("Exception dans la chaine CompletableFuture de AuthentificationService ("+actionOriginale+"): " + ex);
+            ex.printStackTrace();
+            JSONObject errorResponse = new JSONObject();
+            errorResponse.put("modele", "authentification");
+            errorResponse.put("actionOriginale", actionOriginale);
+            errorResponse.put("statut", "echec");
+            errorResponse.put("message", "Erreur interne du serveur: " + ex.getMessage());
+            session.getAsyncRemote().sendText(errorResponse.toString(), new SendHandler() {
+                 @Override
+                 public void onResult(SendResult result) {
+                     if (!result.isOK()) {
+                         System.err.println("Erreur envoi message d'erreur (exceptionally) async dans AuthentificationService: " + result.getException());
+                         if(result.getException() != null) result.getException().printStackTrace();
+                     }
+                 }
+            });
+            return null;
+        });
     }
 
-    private String connexion(JSONObject data){
-        String login = data.optString("login");
-        String password = data.optString("password");
-        JSONObject reponseJson = new JSONObject();
+    private CompletableFuture<String> connexionAsync(JSONObject data, String actionOriginale) {
+        return CompletableFuture.supplyAsync(() -> {
+            String login = data.optString("login");
+            String password = data.optString("password");
+            JSONObject reponseJson = new JSONObject();
 
-        reponseJson.put("modele", "authentification"); // Indique que ce message concerne l'authentification.
-        reponseJson.put("action", "reponseConnexion"); // Indique que c'est une réponse à une tentative de connexion
-        // Inte=éractionn avec la base de données pour vérifier les informations de connexion
-        try {
-            PersonneManager personneManager = new PersonneManager();
-            Personne personne = personneManager.connecter(login, password);
+            reponseJson.put("modele", "authentification");
+            reponseJson.put("actionOriginale", actionOriginale); 
 
-            // Si la connexion est réussie, on envoie un message de succès
-            if (personne != null) {
-                reponseJson.put("statut", "succes");
-                reponseJson.put("message", "Connexion réussie");
-                reponseJson.put("personne", personne.toJsonObject());
-            } else {
+            try {
+                PersonneManager personneManager = new PersonneManager();
+                Personne personne = personneManager.connecter(login, password);
+
+                if (personne != null) {
+                    reponseJson.put("statut", "succes");
+                    reponseJson.put("message", "Connexion réussie");
+                    // Ensure personne.toJsonObject() exists and works as expected
+                    reponseJson.put("personne", personne.toJsonObject()); 
+                } else {
+                    reponseJson.put("statut", "echec");
+                    reponseJson.put("message", "Identifiants incorrects");
+                }
+            } catch (SQLException e) {
+                System.err.println("Erreur SQL (connexion): " + e.getMessage());
+                reponseJson.put("statut", "echec"); // Changed from "status":"error" for consistency
+                reponseJson.put("message", "Erreur interne du serveur lors de l'authentification.");
+            } catch (Exception e) {
+                System.err.println("Erreur inattendue (connexion): " + e.getMessage());
+                e.printStackTrace();
                 reponseJson.put("statut", "echec");
-                reponseJson.put("message", "Identifiants incorrects");
+                reponseJson.put("message", "Erreur serveur inattendue: " + e.getMessage());
             }
-
-        } catch (SQLException e) {
-            System.err.println("Erreur lors de la connexion à la base de données : " + e.getMessage()); // Affichage de l'erreur dans la console du serveur pour le débogage.
-            reponseJson.put("status", "error"); // Ajout du statut "error" à la réponse.
-            reponseJson.put("message", "Erreur interne du serveur lors de l'authentification.");
-        }
-
-        return reponseJson.toString();
+            return reponseJson.toString();
+        }, Database.getDbExecutor()); // Assuming Database.getDbExecutor() exists
     }
 }
