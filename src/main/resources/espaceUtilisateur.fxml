@@ -4,30 +4,154 @@
 <?import javafx.scene.control.Button?>
 <?import javafx.scene.control.Label?>
 <?import javafx.scene.control.TextField?>
+<?import javafx.scene.layout.HBox?>
 <?import javafx.scene.layout.VBox?>
+<?import javafx.scene.layout.Region?>
 
-<!-- Root VBox uses both page-container for common layout and espace-utilisateur-container for specific overrides -->
-<VBox fx:id="espaceUtilisateurRootPane" styleClass="page-container, espace-utilisateur-container" alignment="TOP_CENTER" spacing="30.0" prefHeight="500.0" prefWidth="600.0" stylesheets="@styles/main.css" xmlns="http://javafx.com/javafx/23.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="client.EspaceUtilisateurController">
+<!-- Interface Utilisateur Moderne - Style Teams/Meet -->
+<VBox fx:id="espaceUtilisateurRootPane"
+      styleClass="page-container, espace-utilisateur-container"
+      alignment="TOP_CENTER"
+      spacing="40.0"
+      prefHeight="700.0"
+      prefWidth="900.0"
+      stylesheets="@styles/main.css"
+      xmlns="http://javafx.com/javafx/23.0.1"
+      xmlns:fx="http://javafx.com/fxml/1"
+      fx:controller="client.EspaceUtilisateurController">
+
     <padding>
-        <!-- Padding is now handled by .page-container or .espace-utilisateur-container, removing inline -->
-        <Insets bottom="0" left="0" right="0" top="0" />
+        <Insets top="40.0" right="40.0" bottom="40.0" left="40.0" />
     </padding>
-    <Label fx:id="welcomeLabel" text="Bienvenue Utilisateur" styleClass="main-title"/>
 
-    <VBox styleClass="section-box" alignment="CENTER_LEFT" spacing="15.0">
-        <children>
-            <Label text="Créer une Nouvelle Réunion" styleClass="section-title"/>
-            <Button fx:id="btnCreerReunion" text="Créer une réunion" styleClass="primary-button" onAction="#handleClickCreerReunion"/>
-        </children>
+    <!-- En-tête avec message de bienvenue moderne -->
+    <VBox alignment="CENTER" spacing="15.0">
+        <Label fx:id="welcomeLabel"
+               text="Bienvenue Utilisateur 👋"
+               styleClass="main-title"/>
+
+        <Label text="Créez ou rejoignez une réunion en quelques clics"
+               styleClass="subtitle-text"
+               style="-fx-font-size: 1.2em; -fx-text-fill: #6c757d; -fx-font-weight: 400;"/>
     </VBox>
 
-    <VBox styleClass="section-box" alignment="CENTER_LEFT" spacing="15.0">
-        <children>
-            <Label text="Rejoindre une Réunion Existante" styleClass="section-title"/>
-            <Label text="Titre ou ID de la réunion:" styleClass="field-label"/>
-            <TextField fx:id="txtTitreReunion" styleClass="styled-text-field" promptText="Entrez le titre ou l'ID de la réunion"/>
-            <!-- CORRECTION: Nom de méthode corrigé -->
-            <Button fx:id="btnRejoindre" text="Rejoindre la réunion" styleClass="primary-button" onAction="#handleClickJoinReunion"/>
-        </children>
+    <!-- Espacement -->
+    <Region prefHeight="20.0" />
+
+    <!-- Section Création de Réunion -->
+    <VBox styleClass="section-box, hover-scale"
+          alignment="CENTER"
+          spacing="25.0"
+          maxWidth="600.0">
+
+        <!-- En-tête de section avec icône -->
+        <HBox alignment="CENTER_LEFT" spacing="12.0">
+            <Label text="📅" style="-fx-font-size: 2em;"/>
+            <VBox alignment="CENTER_LEFT" spacing="5.0">
+                <Label text="Nouvelle Réunion" styleClass="section-title"/>
+                <Label text="Organisez votre réunion et invitez vos collaborateurs"
+                       styleClass="field-label"/>
+            </VBox>
+        </HBox>
+
+        <!-- Bouton de création moderne -->
+        <Button fx:id="btnCreerReunion"
+                text="✨ Créer une réunion"
+                styleClass="primary-button, hover-scale"
+                onAction="#handleClickCreerReunion"
+                prefWidth="250.0"
+                prefHeight="50.0"
+                style="-fx-font-size: 1.1em;"/>
+
+        <!-- Fonctionnalités incluses -->
+        <HBox alignment="CENTER" spacing="30.0" style="-fx-padding: 10 0 0 0;">
+            <VBox alignment="CENTER" spacing="5.0">
+                <Label text="🎥" style="-fx-font-size: 1.5em;"/>
+                <Label text="Chat intégré" style="-fx-font-size: 0.9em; -fx-text-fill: #6c757d;"/>
+            </VBox>
+            <VBox alignment="CENTER" spacing="5.0">
+                <Label text="👥" style="-fx-font-size: 1.5em;"/>
+                <Label text="Invitations" style="-fx-font-size: 0.9em; -fx-text-fill: #6c757d;"/>
+            </VBox>
+            <VBox alignment="CENTER" spacing="5.0">
+                <Label text="🔒" style="-fx-font-size: 1.5em;"/>
+                <Label text="Sécurisé" style="-fx-font-size: 0.9em; -fx-text-fill: #6c757d;"/>
+            </VBox>
+        </HBox>
     </VBox>
+
+    <!-- Espacement -->
+    <Region prefHeight="10.0" />
+
+    <!-- Section Rejoindre une Réunion -->
+    <VBox styleClass="section-box, hover-scale"
+          alignment="CENTER"
+          spacing="25.0"
+          maxWidth="600.0">
+
+        <!-- En-tête de section avec icône -->
+        <HBox alignment="CENTER_LEFT" spacing="12.0">
+            <Label text="🚀" style="-fx-font-size: 2em;"/>
+            <VBox alignment="CENTER_LEFT" spacing="5.0">
+                <Label text="Rejoindre une Réunion" styleClass="section-title"/>
+                <Label text="Participez à une réunion existante avec son ID ou nom"
+                       styleClass="field-label"/>
+            </VBox>
+        </HBox>
+
+        <!-- Champ de saisie moderne -->
+        <VBox alignment="CENTER" spacing="15.0">
+            <Label text="🔍 Nom ou ID de la réunion"
+                   styleClass="field-label"
+                   style="-fx-font-weight: 500;"/>
+
+            <TextField fx:id="txtTitreReunion"
+                      styleClass="modern-text-field"
+                      promptText="Exemple: Réunion équipe ou 12345"
+                      prefWidth="400.0"
+                      prefHeight="50.0"
+                      style="-fx-font-size: 1.1em;"/>
+        </VBox>
+
+        <!-- Bouton de connexion moderne -->
+        <Button fx:id="btnRejoindre"
+                text="🎯 Rejoindre la réunion"
+                styleClass="primary-button, hover-scale"
+                onAction="#handleClickJoinReunion"
+                prefWidth="250.0"
+                prefHeight="50.0"
+                style="-fx-font-size: 1.1em; -fx-background-color:  #20c997"/>
+
+        <!-- Conseil utilisateur -->
+        <HBox alignment="CENTER" spacing="8.0" style="-fx-padding: 10 0 0 0;">
+            <Label text="💡" style="-fx-font-size: 1.2em;"/>
+            <Label text="Astuce: Vous pouvez utiliser le nom exact ou l'ID numérique de la réunion"
+                   style="-fx-font-size: 0.9em; -fx-text-fill: #6c757d; -fx-font-style: italic;"/>
+        </HBox>
+    </VBox>
+
+    <!-- Espacement flexible -->
+    <Region VBox.vgrow="ALWAYS" />
+
+    <!-- Pied de page avec informations -->
+    <HBox alignment="CENTER" spacing="40.0" style="-fx-padding: 20 0 0 0;">
+        <VBox alignment="CENTER" spacing="5.0">
+            <Label text="🔄" style="-fx-font-size: 1.8em;"/>
+            <Label text="Synchronisation" style="-fx-font-size: 0.9em; -fx-text-fill: #6c757d; -fx-font-weight: 500;"/>
+            <Label text="Temps réel" style="-fx-font-size: 0.8em; -fx-text-fill: #adb5bd;"/>
+        </VBox>
+
+        <VBox alignment="CENTER" spacing="5.0">
+            <Label text="🌐" style="-fx-font-size: 1.8em;"/>
+            <Label text="Multi-plateforme" style="-fx-font-size: 0.9em; -fx-text-fill: #6c757d; -fx-font-weight: 500;"/>
+            <Label text="Partout" style="-fx-font-size: 0.8em; -fx-text-fill: #adb5bd;"/>
+        </VBox>
+
+        <VBox alignment="CENTER" spacing="5.0">
+            <Label text="⚡" style="-fx-font-size: 1.8em;"/>
+            <Label text="Performance" style="-fx-font-size: 0.9em; -fx-text-fill: #6c757d; -fx-font-weight: 500;"/>
+            <Label text="Optimisée" style="-fx-font-size: 0.8em; -fx-text-fill: #adb5bd;"/>
+        </VBox>
+    </HBox>
+
 </VBox>
