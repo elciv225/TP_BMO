@@ -63,11 +63,18 @@ public class ReunionController {
     }
 
     /**
-     * NOUVEAU: Initialise avec les données de l'utilisateur connecté
+     * Initialise les données du contrôleur pour une session de réunion.
+     * Doit être appelé après le chargement de l'FXML.
+     *
+     * @param reunionId      L'ID de la réunion.
+     * @param userId         L'ID de l'utilisateur actuel.
+     * @param organizerId    L'ID de l'organisateur de la réunion.
+     * @param webSocket      L'instance ClientWebSocket pour la communication.
+     * @param userName       Le nom complet de l'utilisateur actuel.
      */
     public void initData(String reunionId, int userId, int organizerId, ClientWebSocket webSocket, String userName) {
         if (isInitialized) {
-            System.out.println("ReunionController déjà initialisé, ignoré.");
+            System.out.println("INFO: ReunionController déjà initialisé pour la réunion " + this.currentReunionId + ". Nouvelle initialisation pour " + reunionId + " ignorée ou gérée avec précaution.");
             return;
         }
 
@@ -91,10 +98,12 @@ public class ReunionController {
     }
 
     /**
-     * Version compatible avec l'ancienne méthode
+     * Initialise les données du contrôleur avec un nom d'utilisateur par défaut.
+     * @deprecated Utiliser de préférence {@link #initData(String, int, int, ClientWebSocket, String)} pour fournir un nom d'utilisateur.
      */
+    @Deprecated
     public void initData(String reunionId, int userId, int organizerId, ClientWebSocket webSocket) {
-        initData(reunionId, userId, organizerId, webSocket, "Utilisateur");
+        initData(reunionId, userId, organizerId, webSocket, "Utilisateur Anonyme");
     }
 
     private void configureInvitationVisibility() {
@@ -105,22 +114,29 @@ public class ReunionController {
         }
     }
 
-    private void updateConnectionStatus(String message, boolean isConnected) {
+    public void updateConnectionStatus(String message, boolean isConnected) {
         if (connectionStatus != null) {
             Platform.runLater(() -> {
                 connectionStatus.setText(message);
-                connectionStatus.getStyleClass().removeAll("connected", "disconnected");
-                connectionStatus.getStyleClass().add(isConnected ? "connected" : "disconnected");
+                connectionStatus.getStyleClass().removeAll("connected", "disconnected", "connecting");
+                if (message.contains("Tentative de reconnexion") || message.contains("Connexion en cours...")) {
+                    connectionStatus.getStyleClass().add("connecting");
+                } else {
+                    connectionStatus.getStyleClass().add(isConnected ? "connected" : "disconnected");
+                }
             });
         }
     }
 
     /**
-     * NOUVEAU: Traite les messages reçus avec style WhatsApp
+     * Traite un message JSON entrant reçu via WebSocket pour cette réunion.
+     * Dispatch les messages aux handlers appropriés en fonction de leur type.
+     *
+     * @param message Le message JSON brut reçu du serveur.
      */
     public void traiterMessageRecu(String message) {
         if (message == null || message.trim().isEmpty()) {
-            System.err.println("Message vide reçu du serveur");
+            System.err.println("ERREUR: Message vide reçu du serveur dans ReunionController.");
             return;
         }
 
@@ -146,23 +162,26 @@ public class ReunionController {
                         handleError(json);
                         break;
                     default:
-                        System.out.println("Type de message non géré: " + messageType);
+                        System.err.println("AVERTISSEMENT: Type de message WebSocket non géré dans ReunionController: '" + messageType + "'. Message: " + json.toString(2));
                 }
             });
         } catch (Exception e) {
-            System.err.println("Erreur lors du traitement du message: " + e.getMessage());
+            System.err.println("ERREUR: Échec du traitement du message JSON dans ReunionController: " + e.getMessage() + ". Message: " + message);
             e.printStackTrace();
         }
     }
 
     /**
-     * NOUVEAU: Gère les messages avec style WhatsApp
+     * Gère l'affichage d'un nouveau message de chat dans l'interface utilisateur.
+     * Applique des styles différents pour les messages envoyés par l'utilisateur actuel et ceux reçus.
+     *
+     * @param json L'objet JSON contenant les détails du message (expéditeur, contenu, ID utilisateur).
      */
     private void handleNewMessageWhatsApp(JSONObject json) {
         String sender = json.optString("sender", "Inconnu");
         String content = json.optString("content", "");
         String userIdStr = json.optString("userId", "");
-        long timestamp = json.optLong("timestamp", System.currentTimeMillis());
+        // long timestamp = json.optLong("timestamp", System.currentTimeMillis()); // Timestamp du serveur, non utilisé actuellement pour l'affichage de l'heure locale.
 
         if (content.isEmpty()) return;
 
@@ -230,36 +249,44 @@ public class ReunionController {
 
     private void handleInvitationResult(JSONObject json) {
         boolean success = json.optBoolean("success", false);
-        String message = json.optString("message", "Aucun message du serveur");
+        String serverMessage = json.optString("message", "Aucune réponse détaillée du serveur.");
+        String title = success ? "Invitation Envoyée" : "Échec de l'Invitation";
+        Alert.AlertType alertType = success ? Alert.AlertType.INFORMATION : Alert.AlertType.ERROR;
 
-        Alert alert = new Alert(success ? Alert.AlertType.INFORMATION : Alert.AlertType.ERROR);
-        alert.setTitle(success ? "Invitation envoyée" : "Erreur d'invitation");
-        alert.setHeaderText(null);
-        alert.setContentText(message);
-        alert.showAndWait();
+        showAlert(alertType, title, serverMessage);
     }
 
     private void handleUserJoined(JSONObject json) {
-        String username = json.optString("username", "Utilisateur inconnu");
-        addSystemMessage("📥 " + username + " a rejoint la réunion");
+        String username = json.optString("username", "Un utilisateur");
+        addSystemMessage("📥 " + username + " a rejoint la réunion.");
     }
 
     private void handleUserLeft(JSONObject json) {
-        String username = json.optString("username", "Utilisateur inconnu");
-        addSystemMessage("📤 " + username + " a quitté la réunion");
+        String username = json.optString("username", "Un utilisateur");
+        addSystemMessage("📤 " + username + " a quitté la réunion.");
     }
 
     private void handleError(JSONObject json) {
-        String errorMessage = json.optString("message", "Erreur inconnue");
-        showAlert(Alert.AlertType.ERROR, "Erreur", errorMessage);
+        String errorMessage = json.optString("message", "Une erreur inconnue est survenue.");
+        String errorTitle = json.optString("errorTitle", "Erreur de Réunion"); // Allow server to specify title
+
+        // Check if this error is related to a specific failed action, e.g. sending a message
+        String originalAction = json.optString("originalAction", "");
+        if ("envoyerMessage".equals(originalAction)) {
+            errorTitle = "Échec de l'Envoi du Message";
+        }
+
+        showAlert(Alert.AlertType.ERROR, errorTitle, errorMessage);
     }
 
     /**
-     * NOUVEAU: Ajoute un message système style WhatsApp
+     * Ajoute un message système (par exemple, utilisateur rejoint/quitte) à la zone de chat.
+     *
+     * @param message Le texte du message système à afficher.
      */
     private void addSystemMessage(String message) {
         Platform.runLater(() -> {
-            VBox systemContainer = new VBox();
+            VBox systemContainer = new VBox(); // Conteneur pour centrer le message système
             systemContainer.setAlignment(Pos.CENTER);
             systemContainer.setPadding(new Insets(5, 0, 5, 0));
 
@@ -277,19 +304,21 @@ public class ReunionController {
     @FXML
     private void envoyerMessage() {
         if (!isInitialized) {
-            showAlert(Alert.AlertType.WARNING, "Non initialisé",
-                     "Le contrôleur n'est pas encore initialisé.");
+            showAlert(Alert.AlertType.WARNING, "Fonctionnalité Indisponible",
+                     "Le système de messagerie n'est pas prêt. Veuillez vérifier votre connexion.");
             return;
         }
 
         String messageText = messageInput.getText();
         if (messageText == null || messageText.trim().isEmpty()) {
+            // Pas d'alerte pour un message vide, juste ne rien envoyer.
             return;
         }
 
-        if (clientWebSocket == null) {
-            showAlert(Alert.AlertType.ERROR, "Erreur de connexion",
-                     "Pas de connexion au serveur. Impossible d'envoyer le message.");
+        if (clientWebSocket == null || !clientWebSocket.isConnected()) {
+            showAlert(Alert.AlertType.ERROR, "Erreur de Connexion",
+                     "Connexion au serveur perdue. Impossible d'envoyer le message. Veuillez vérifier votre connexion internet.");
+            updateConnectionStatus("Déconnecté. Impossible d'envoyer.", false);
             return;
         }
 
@@ -301,42 +330,43 @@ public class ReunionController {
             messageJson.put("userId", String.valueOf(currentUserId));
             messageJson.put("contenu", messageText.trim());
 
-            System.out.println("Envoi du message: " + messageJson.toString());
+            // System.out.println("DEBUG: Envoi du message JSON: " + messageJson.toString());
             clientWebSocket.envoyerRequete(messageJson.toString());
             messageInput.clear();
 
         } catch (Exception e) {
-            System.err.println("Erreur lors de l'envoi du message: " + e.getMessage());
+            System.err.println("ERREUR: Exception lors de la construction ou l'envoi du message: " + e.getMessage());
             e.printStackTrace();
-            showAlert(Alert.AlertType.ERROR, "Erreur",
-                     "Impossible d'envoyer le message: " + e.getMessage());
+            showAlert(Alert.AlertType.ERROR, "Erreur d'Envoi du Message",
+                     "Votre message n'a pas pu être envoyé en raison d'une erreur technique interne: " + e.getClass().getSimpleName());
         }
     }
 
     @FXML
     private void handleInviteUser() {
         if (!isInitialized) {
-            showAlert(Alert.AlertType.WARNING, "Non initialisé",
-                     "Le contrôleur n'est pas encore initialisé.");
+            showAlert(Alert.AlertType.WARNING, "Fonctionnalité Indisponible",
+                     "Le système d'invitation n'est pas prêt. Veuillez vérifier votre connexion.");
             return;
         }
 
         String usernameToInvite = inviteUserField.getText();
         if (usernameToInvite == null || usernameToInvite.trim().isEmpty()) {
-            showAlert(Alert.AlertType.WARNING, "Champ vide",
-                     "Veuillez saisir le nom d'utilisateur à inviter.");
+            showAlert(Alert.AlertType.WARNING, "Champ Requis",
+                     "Veuillez saisir le nom d'utilisateur de la personne à inviter.");
             return;
         }
 
         if (currentUserId != organizerId) {
-            showAlert(Alert.AlertType.ERROR, "Permission refusée",
-                     "Seul l'organisateur peut inviter des membres.");
+            showAlert(Alert.AlertType.ERROR, "Action Non Autorisée",
+                     "Seul l'organisateur de la réunion a le droit d'inviter des participants.");
             return;
         }
 
-        if (clientWebSocket == null) {
-            showAlert(Alert.AlertType.ERROR, "Erreur de connexion",
-                     "Pas de connexion au serveur. Impossible d'envoyer l'invitation.");
+        if (clientWebSocket == null || !clientWebSocket.isConnected()) {
+            showAlert(Alert.AlertType.ERROR, "Erreur de Connexion",
+                     "Connexion au serveur perdue. Impossible d'envoyer l'invitation. Veuillez vérifier votre connexion internet.");
+            updateConnectionStatus("Déconnecté. Impossible d'inviter.", false);
             return;
         }
 
@@ -349,11 +379,14 @@ public class ReunionController {
 
             clientWebSocket.envoyerRequete(inviteJson.toString());
             inviteUserField.clear();
+            showAlert(Alert.AlertType.INFORMATION, "Invitation en Cours", "L'invitation pour '" + usernameToInvite + "' est en cours de traitement par le serveur.");
+
 
         } catch (Exception e) {
-            System.err.println("Erreur lors de l'envoi de l'invitation: " + e.getMessage());
-            showAlert(Alert.AlertType.ERROR, "Erreur",
-                     "Impossible d'envoyer l'invitation: " + e.getMessage());
+            System.err.println("ERREUR: Exception lors de l'envoi de l'invitation: " + e.getMessage());
+            e.printStackTrace();
+            showAlert(Alert.AlertType.ERROR, "Erreur d'Envoi de l'Invitation",
+                     "L'invitation n'a pas pu être envoyée en raison d'une erreur technique interne: " + e.getClass().getSimpleName());
         }
     }
 
@@ -389,15 +422,27 @@ public class ReunionController {
                 leaveJson.put("userId", String.valueOf(currentUserId));
 
                 clientWebSocket.envoyerRequete(leaveJson.toString());
+                System.out.println("INFO: Message 'quitterReunion' envoyé pour utilisateur " + currentUserId + " de la réunion " + currentReunionId);
             } catch (Exception e) {
-                System.err.println("Erreur lors de la fermeture: " + e.getMessage());
+                System.err.println("ERREUR: Échec de l'envoi du message 'quitterReunion': " + e.getMessage());
             }
+            // ClientWebSocket.clearReunionController() est appelé par EspaceUtilisateurController
+            // lors de la fermeture de la fenêtre de réunion.
+            // Si cleanup() est appelé pour d'autres raisons, la version sans paramètre peut être appelée ici
+            // pour s'assurer que ce ReunionController n'est plus la cible des messages.
+            // Cependant, pour éviter des appels multiples ou des ordres incorrects de nettoyage,
+            // il est préférable de centraliser cela dans EspaceUtilisateurController.
+            // Si cette instance de ReunionController doit être explicitement retirée de ClientWebSocket
+            // sans que EspaceUtilisateurController ne soit immédiatement rétabli, on pourrait appeler:
+            // clientWebSocket.clearReunionAndEspcControllers(); // ou une version plus spécifique
+            // Pour l'instant, on se fie à EspaceUtilisateurController.
         }
 
-        isInitialized = false;
-        clientWebSocket = null;
-        currentReunionId = null;
-        currentUserId = -1;
+        isInitialized = false; // Marquer comme non initialisé pour éviter toute action ultérieure.
+        System.out.println("INFO: ReunionController nettoyé pour la réunion " + currentReunionId + " et l'utilisateur " + currentUserName);
+        // Ne pas nullifier clientWebSocket ici, car il est géré par le contrôleur parent (EspaceUtilisateurController).
+        currentReunionId = null; // Important pour la logique isInitialized et pour éviter la réutilisation incorrecte.
+        currentUserId = -1; 
         organizerId = -1;
     }
 

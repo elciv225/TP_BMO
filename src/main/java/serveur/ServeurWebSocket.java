@@ -99,7 +99,7 @@ public class ServeurWebSocket {
             System.out.println("   Total sessions actives: " + sessions.size());
 
             try {
-                // CORRECTION: Envoyer un message JSON valide au lieu d'un texte brut
+                // Envoyer un message JSON de bienvenue structuré
                 String welcomeMessage = String.format(
                     "{\"type\":\"welcome\",\"message\":\"Connexion établie avec succès\",\"sessionId\":\"%s\"}",
                     session.getId()

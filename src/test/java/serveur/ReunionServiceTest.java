@@ -42,75 +42,232 @@ public class ReunionServiceTest {
     private Session mockSession;
     @Mock
     private RemoteEndpoint.Basic mockBasicRemote;
+    @Mock
+    private Map<String, Object> mockUserProperties; // Mock the user properties map directly
 
     @InjectMocks
-    private ReunionService reunionService; // The class we are testing
+    private ReunionService reunionService;
 
-    private Map<String, Object> userProperties;
+    @Captor
+    private ArgumentCaptor<String> stringArgumentCaptor;
+
 
     @BeforeEach
     void setUp() throws SQLException, IOException {
-        // Mock Database.getInstance().getConnection() chain
-        // Need to handle the static method getInstance()
-        // For this, we use try-with-resources for MockedStatic
-        // This setup will be common for many tests, so it's in @BeforeEach
-
-        lenient().when(mockDatabase.getConnection()).thenReturn(mockConnection);
-        lenient().when(mockConnection.prepareStatement(anyString())).thenReturn(mockPreparedStatement);
-        lenient().when(mockPreparedStatement.executeQuery()).thenReturn(mockResultSet);
-        lenient().when(mockPreparedStatement.executeUpdate()).thenReturn(1); // Simulate 1 row affected
-
-        // Mock Session methods
-        userProperties = new HashMap<>();
-        lenient().when(mockSession.getUserProperties()).thenReturn(userProperties);
+        // Common mock setups
         lenient().when(mockSession.getBasicRemote()).thenReturn(mockBasicRemote);
         lenient().when(mockSession.isOpen()).thenReturn(true);
+        lenient().when(mockSession.getUserProperties()).thenReturn(mockUserProperties); // Use the mocked map
+
+        // Default behavior for prepared statements that are commonly used
+        lenient().when(mockConnection.prepareStatement(anyString())).thenReturn(mockPreparedStatement);
+        lenient().when(mockConnection.prepareStatement(anyString(), eq(Statement.RETURN_GENERATED_KEYS))).thenReturn(mockPreparedStatement);
+        lenient().when(mockPreparedStatement.executeUpdate()).thenReturn(1); // Simulate 1 row affected for inserts/updates
+        lenient().when(mockPreparedStatement.executeQuery()).thenReturn(mockResultSet); // Simulate returning a ResultSet
     }
 
-    // Test "envoyerMessage" action
+    @Test
+    void testCreerReunion_Success() throws Exception {
+        try (MockedStatic<Database> dbStaticMock = Mockito.mockStatic(Database.class)) {
+            dbStaticMock.when(Database::getConnection).thenReturn(mockConnection);
+
+            JSONObject data = new JSONObject();
+            data.put("action", "creation");
+            data.put("nom", "Test Reunion");
+            data.put("idOrganisateur", 1);
+            data.put("debut", LocalDateTime.now().plusHours(1).toString()); // Ensure future date
+            data.put("duree", 60);
+            data.put("type", "STANDARD");
+            // sujet and agenda are optional
+
+            // Mock PreparedStatement for inserting reunion (to get generated ID)
+            when(mockPreparedStatement.getGeneratedKeys()).thenReturn(mockResultSet);
+            when(mockResultSet.next()).thenReturn(true);
+            when(mockResultSet.getInt(1)).thenReturn(100); // Mocked reunion ID
+
+            // Mock PreparedStatement for inserting participation
+            PreparedStatement mockPsParticipation = mock(PreparedStatement.class);
+            when(mockConnection.prepareStatement(startsWith("INSERT INTO participation"))).thenReturn(mockPsParticipation);
+            when(mockPsParticipation.executeUpdate()).thenReturn(1);
+
+            reunionService.execute(data, mockSession);
+
+            verify(mockBasicRemote).sendText(stringArgumentCaptor.capture());
+            String response = stringArgumentCaptor.getValue();
+            JSONObject jsonResponse = new JSONObject(response);
+
+            assertEquals("reunion", jsonResponse.getString("modele"));
+            assertEquals("reponseCreation", jsonResponse.getString("action"));
+            assertEquals("succes", jsonResponse.getString("statut"));
+            assertTrue(jsonResponse.has("reunion"), "Response should contain reunion details");
+            assertEquals(100, jsonResponse.getJSONObject("reunion").getInt("id"), "Reunion ID should match mocked ID");
+            assertTrue(jsonResponse.getBoolean("autoJoin"), "autoJoin should be true for successful creation");
+        }
+    }
+
+    @Test
+    void testCreerReunion_MissingNom() throws Exception {
+        try (MockedStatic<Database> dbStaticMock = Mockito.mockStatic(Database.class)) {
+            dbStaticMock.when(Database::getConnection).thenReturn(mockConnection);
+            JSONObject data = new JSONObject();
+            data.put("action", "creation");
+            // "nom" is missing
+            data.put("idOrganisateur", 1);
+            // Other fields that might be required by ReunionManager for default values
+            data.put("debut", LocalDateTime.now().plusHours(1).toString());
+            data.put("duree", 60);
+            data.put("type", "STANDARD");
+
+
+            reunionService.execute(data, mockSession);
+
+            verify(mockBasicRemote).sendText(stringArgumentCaptor.capture());
+            String response = stringArgumentCaptor.getValue();
+            JSONObject jsonResponse = new JSONObject(response);
+
+            assertEquals("reunion", jsonResponse.getString("modele"));
+            assertEquals("reponseCreation", jsonResponse.getString("action"));
+            assertEquals("echec", jsonResponse.getString("statut"));
+            assertTrue(jsonResponse.getString("message").contains("Nom et organisateur obligatoires"));
+        }
+    }
+
+
     @Test
     void testEnvoyerMessage_Success() throws Exception {
         try (MockedStatic<Database> dbStaticMock = Mockito.mockStatic(Database.class);
              MockedStatic<ServeurWebSocket> wsStaticMock = Mockito.mockStatic(ServeurWebSocket.class)) {
             
-            dbStaticMock.when(Database::getInstance).thenReturn(mockDatabase);
-            wsStaticMock.when(ServeurWebSocket::getSessions).thenReturn(Collections.singleton(mockSession));
-
-            // Setup session properties for the sending user
-            userProperties.put("userId", "1"); // User sending the message
-            userProperties.put("reunionId", "101"); // This user is in reunion 101
-
-            // Prepare JSON input for envoyerMessage
+            dbStaticMock.when(Database::getConnection).thenReturn(mockConnection);
+            
+            // Prepare JSON input
             JSONObject messageJson = new JSONObject();
             messageJson.put("action", "envoyerMessage");
             messageJson.put("reunionId", "101");
-            messageJson.put("userId", "1"); // Personne ID from client payload
+            messageJson.put("userId", "1");
             messageJson.put("contenu", "Hello World");
 
-            // Mock database interactions for saving message
-            when(mockConnection.prepareStatement(startsWith("INSERT INTO message"))).thenReturn(mockPreparedStatement);
-            
-            // Mock database interactions for fetching sender's name
-            when(mockConnection.prepareStatement(startsWith("SELECT nom FROM personne"))).thenReturn(mockPreparedStatement);
-            when(mockResultSet.next()).thenReturn(true); // User found
-            when(mockResultSet.getString("nom")).thenReturn("TestUser");
+            // Mock sender's session properties
+            when(mockUserProperties.get("reunionId")).thenReturn("101");
+            when(mockUserProperties.get("userId")).thenReturn("1");
 
-            // Execute the service method
+
+            // Mock database checks: user exists, reunion exists, user is participant
+            // 1. Check User & Get Name
+            PreparedStatement mockPsCheckUser = mock(PreparedStatement.class);
+            ResultSet mockRsCheckUser = mock(ResultSet.class);
+            when(mockConnection.prepareStatement(startsWith("SELECT CONCAT(nom, ' ', prenom) as nom_complet"))).thenReturn(mockPsCheckUser);
+            when(mockPsCheckUser.executeQuery()).thenReturn(mockRsCheckUser);
+            when(mockRsCheckUser.next()).thenReturn(true); 
+            when(mockRsCheckUser.getString("nom_complet")).thenReturn("Test User");
+
+            // 2. Check Reunion
+            PreparedStatement mockPsCheckReunion = mock(PreparedStatement.class);
+            ResultSet mockRsCheckReunion = mock(ResultSet.class);
+            when(mockConnection.prepareStatement(startsWith("SELECT COUNT(*) FROM reunion"))).thenReturn(mockPsCheckReunion);
+            when(mockPsCheckReunion.executeQuery()).thenReturn(mockRsCheckReunion);
+            when(mockRsCheckReunion.next()).thenReturn(true);
+            when(mockRsCheckReunion.getInt(1)).thenReturn(1); // Reunion exists
+
+            // 3. Check Participation
+            PreparedStatement mockPsCheckPart = mock(PreparedStatement.class);
+            ResultSet mockRsCheckPart = mock(ResultSet.class);
+            when(mockConnection.prepareStatement(startsWith("SELECT COUNT(*) FROM participation"))).thenReturn(mockPsCheckPart);
+            when(mockPsCheckPart.executeQuery()).thenReturn(mockRsCheckPart);
+            when(mockRsCheckPart.next()).thenReturn(true);
+            when(mockRsCheckPart.getInt(1)).thenReturn(1); // User is participant
+
+            // 4. Message Insert
+            PreparedStatement mockPsInsertMsg = mock(PreparedStatement.class);
+            when(mockConnection.prepareStatement(startsWith("INSERT INTO message"))).thenReturn(mockPsInsertMsg);
+            when(mockPsInsertMsg.executeUpdate()).thenReturn(1);
+
+            // Mock ServeurWebSocket.getSessions() for broadcast
+            Set<Session> mockSessions = new HashSet<>();
+            Session mockParticipantSession = mock(Session.class); // Another participant
+            RemoteEndpoint.Basic mockParticipantRemote = mock(RemoteEndpoint.Basic.class);
+            Map<String, Object> participantProps = new HashMap<>();
+            participantProps.put("reunionId", "101");
+
+            when(mockParticipantSession.isOpen()).thenReturn(true);
+            when(mockParticipantSession.getBasicRemote()).thenReturn(mockParticipantRemote);
+            when(mockParticipantSession.getUserProperties()).thenReturn(participantProps);
+            
+            mockSessions.add(mockSession); // Sender's session
+            mockSessions.add(mockParticipantSession); // Other participant's session
+            wsStaticMock.when(ServeurWebSocket::getSessions).thenReturn(mockSessions);
+
             reunionService.execute(messageJson, mockSession);
 
-            // Verify database insert
-            ArgumentCaptor<String> sqlCaptor = ArgumentCaptor.forClass(String.class);
-            verify(mockConnection, times(2)).prepareStatement(sqlCaptor.capture()); // 1 for insert, 1 for select nom
-            verify(mockPreparedStatement, times(1)).executeUpdate(); // For the insert
+            // Verify broadcast to both sessions (sender and other participant)
+            ArgumentCaptor<String> broadcastCaptor = ArgumentCaptor.forClass(String.class);
+            verify(mockBasicRemote, times(1)).sendText(broadcastCaptor.capture()); // Sender receives their own message back
+            verify(mockParticipantRemote, times(1)).sendText(broadcastCaptor.capture()); // Other participant receives
             
-            // Verify that the message was "broadcast" (sent to our mocked session)
-            ArgumentCaptor<String> broadcastMessageCaptor = ArgumentCaptor.forClass(String.class);
-            verify(mockBasicRemote).sendText(broadcastMessageCaptor.capture());
+            for(String capturedJsonString : broadcastCaptor.getAllValues()){
+                JSONObject broadcastJson = new JSONObject(capturedJsonString);
+                assertEquals("newMessage", broadcastJson.getString("type"));
+                assertEquals("101", broadcastJson.getString("reunionId"));
+                assertEquals("Test User", broadcastJson.getString("sender"));
+                assertEquals("Hello World", broadcastJson.getString("content"));
+                assertEquals("1", broadcastJson.getString("userId"));
+            }
             
-            JSONObject sentMessage = new JSONObject(broadcastMessageCaptor.getValue());
-            assertEquals("newMessage", sentMessage.getString("type"));
-            assertEquals("Hello World", sentMessage.getString("content"));
-            assertEquals("TestUser", sentMessage.getString("sender"));
+            // Verify message was inserted
+            verify(mockPsInsertMsg).executeUpdate();
+        }
+    }
+
+    @Test
+    void testEnvoyerMessage_UserNotParticipant() throws Exception {
+        try (MockedStatic<Database> dbStaticMock = Mockito.mockStatic(Database.class)) {
+            dbStaticMock.when(Database::getConnection).thenReturn(mockConnection);
+
+            JSONObject data = new JSONObject();
+            data.put("action", "envoyerMessage");
+            data.put("reunionId", "11");
+            data.put("userId", "2");
+            data.put("contenu", "Trying to talk");
+
+            // Mock session properties for the sender
+            when(mockUserProperties.get("reunionId")).thenReturn("11"); 
+            when(mockUserProperties.get("userId")).thenReturn("2");
+
+
+            // 1. Check User & Get Name
+            PreparedStatement mockPsCheckUser = mock(PreparedStatement.class);
+            ResultSet mockRsCheckUser = mock(ResultSet.class);
+            when(mockConnection.prepareStatement(startsWith("SELECT CONCAT(nom, ' ', prenom) as nom_complet"))).thenReturn(mockPsCheckUser);
+            when(mockPsCheckUser.executeQuery()).thenReturn(mockRsCheckUser);
+            when(mockRsCheckUser.next()).thenReturn(true); 
+            when(mockRsCheckUser.getString("nom_complet")).thenReturn("Non Participant");
+
+            // 2. Check Reunion
+            PreparedStatement mockPsCheckReunion = mock(PreparedStatement.class);
+            ResultSet mockRsCheckReunion = mock(ResultSet.class);
+            when(mockConnection.prepareStatement(startsWith("SELECT COUNT(*) FROM reunion"))).thenReturn(mockPsCheckReunion);
+            when(mockPsCheckReunion.executeQuery()).thenReturn(mockRsCheckReunion);
+            when(mockRsCheckReunion.next()).thenReturn(true);
+            when(mockRsCheckReunion.getInt(1)).thenReturn(1); // Reunion exists
+
+            // 3. Check Participation - User is NOT a participant
+            PreparedStatement mockPsCheckPart = mock(PreparedStatement.class);
+            ResultSet mockRsCheckPart = mock(ResultSet.class);
+            when(mockConnection.prepareStatement(startsWith("SELECT COUNT(*) FROM participation"))).thenReturn(mockPsCheckPart);
+            when(mockPsCheckPart.executeQuery()).thenReturn(mockRsCheckPart);
+            when(mockRsCheckPart.next()).thenReturn(true);
+            when(mockRsCheckPart.getInt(1)).thenReturn(0); // User is NOT participant
+
+            reunionService.execute(data, mockSession);
+
+            // Verify error response sent back to the calling session
+            verify(mockBasicRemote).sendText(stringArgumentCaptor.capture());
+            JSONObject errorResponse = new JSONObject(stringArgumentCaptor.getValue());
+            assertEquals("error", errorResponse.getString("type"));
+            assertEquals("Vous ne participez pas à cette réunion.", errorResponse.getString("message"));
+
+            // Verify no message insertion or broadcast occurred
+            verify(mockConnection, never()).prepareStatement(startsWith("INSERT INTO message"));
         }
     }
 
@@ -118,11 +275,9 @@ public class ReunionServiceTest {
     @Test
     void testInviterMembre_SuccessByOrganizer() throws Exception {
         try (MockedStatic<Database> dbStaticMock = Mockito.mockStatic(Database.class)) {
-            dbStaticMock.when(Database::getInstance).thenReturn(mockDatabase);
+            dbStaticMock.when(Database::getConnection).thenReturn(mockConnection);
 
-            // Inviter is user "1", who is the organizer
-            userProperties.put("userId", "1"); 
-            userProperties.put("reunionId", "101");
+            when(mockUserProperties.get("userId")).thenReturn("1"); // Inviter is user "1", who is the organizer
 
             JSONObject inviteJson = new JSONObject();
             inviteJson.put("action", "inviterMembre");
@@ -136,40 +291,33 @@ public class ReunionServiceTest {
             when(mockResultSet.getInt("organisateur_id")).thenReturn(1); // Inviter "1" is organizer
 
             // Mock: Fetch invitedUser's ID (user "invitedUser" is ID 2)
-            PreparedStatement MOCK_invitedUserPs = mock(PreparedStatement.class); // Separate mock for this specific query
-            ResultSet MOCK_invitedUserRs = mock(ResultSet.class); // Separate mock for this result set
-            when(mockConnection.prepareStatement(startsWith("SELECT id FROM personne WHERE login = ?"))).thenReturn(MOCK_invitedUserPs);
-            when(MOCK_invitedUserPs.executeQuery()).thenReturn(MOCK_invitedUserRs);
-            when(MOCK_invitedUserRs.next()).thenReturn(true); // User "invitedUser" found
-            when(MOCK_invitedUserRs.getInt("id")).thenReturn(2); // Their ID is 2
+            PreparedStatement mockPsFetchUser = mock(PreparedStatement.class);
+            ResultSet mockRsFetchUser = mock(ResultSet.class);
+            when(mockConnection.prepareStatement(startsWith("SELECT id FROM personne WHERE login = ?"))).thenReturn(mockPsFetchUser);
+            when(mockPsFetchUser.executeQuery()).thenReturn(mockRsFetchUser);
+            when(mockRsFetchUser.next()).thenReturn(true); 
+            when(mockRsFetchUser.getInt("id")).thenReturn(2); 
 
             // Mock: Check if already participating (user 2 is NOT in reunion 101 yet)
-            PreparedStatement MOCK_participationPs = mock(PreparedStatement.class);
-            ResultSet MOCK_participationRs = mock(ResultSet.class);
-            when(mockConnection.prepareStatement(startsWith("SELECT * FROM participation"))).thenReturn(MOCK_participationPs);
-            when(MOCK_participationPs.executeQuery()).thenReturn(MOCK_participationRs);
-            when(MOCK_participationRs.next()).thenReturn(false); // Not yet participating
+            PreparedStatement mockPsCheckPart = mock(PreparedStatement.class);
+            ResultSet mockRsCheckPart = mock(ResultSet.class);
+            when(mockConnection.prepareStatement(startsWith("SELECT * FROM participation"))).thenReturn(mockPsCheckPart);
+            when(mockPsCheckPart.executeQuery()).thenReturn(mockRsCheckPart);
+            when(mockRsCheckPart.next()).thenReturn(false); 
 
             // Mock: Insert into participation
-            PreparedStatement MOCK_insertParticipationPs = mock(PreparedStatement.class);
-            when(mockConnection.prepareStatement(startsWith("INSERT INTO participation"))).thenReturn(MOCK_insertParticipationPs);
-            when(MOCK_insertParticipationPs.executeUpdate()).thenReturn(1);
+            PreparedStatement mockPsInsertPart = mock(PreparedStatement.class);
+            when(mockConnection.prepareStatement(startsWith("INSERT INTO participation"))).thenReturn(mockPsInsertPart);
+            when(mockPsInsertPart.executeUpdate()).thenReturn(1);
 
-
-            // Execute
             reunionService.execute(inviteJson, mockSession);
 
-            // Verify: participation table insert
-            verify(MOCK_insertParticipationPs, times(1)).executeUpdate();
-
-            // Verify: success response sent to inviter
-            ArgumentCaptor<String> responseCaptor = ArgumentCaptor.forClass(String.class);
-            verify(mockBasicRemote).sendText(responseCaptor.capture());
-            JSONObject response = new JSONObject(responseCaptor.getValue());
+            verify(mockPsInsertPart).executeUpdate();
+            verify(mockBasicRemote).sendText(stringArgumentCaptor.capture());
+            JSONObject response = new JSONObject(stringArgumentCaptor.getValue());
             assertEquals("invitationResult", response.getString("type"));
             assertTrue(response.getBoolean("success"));
-            // The message from ReunionService is "'username' has been successfully invited to the reunion."
-            assertEquals("invitedUser has been successfully invited to the reunion.", response.getString("message"));
+            assertEquals("'invitedUser' a été invité avec succès à la réunion.", response.getString("message"));
         }
     }
     
@@ -177,121 +325,98 @@ public class ReunionServiceTest {
      @Test
      void testInviterMembre_FailNotOrganizer() throws Exception {
          try (MockedStatic<Database> dbStaticMock = Mockito.mockStatic(Database.class)) {
-             dbStaticMock.when(Database::getInstance).thenReturn(mockDatabase);
+            dbStaticMock.when(Database::getConnection).thenReturn(mockConnection);
 
-             userProperties.put("userId", "2"); // User "2" is NOT the organizer
-             userProperties.put("reunionId", "101");
+            when(mockUserProperties.get("userId")).thenReturn("2"); // User "2" is NOT the organizer
 
-             JSONObject inviteJson = new JSONObject();
-             inviteJson.put("action", "inviterMembre");
-             inviteJson.put("reunionId", "101");
-             inviteJson.put("usernameToInvite", "anotherUser");
+            JSONObject inviteJson = new JSONObject();
+            inviteJson.put("action", "inviterMembre");
+            inviteJson.put("reunionId", "101");
+            inviteJson.put("usernameToInvite", "anotherUser");
 
-             // Mock: Fetch reunion details (organizer is user "1")
-             when(mockConnection.prepareStatement(startsWith("SELECT type, organisateur_id FROM reunion"))).thenReturn(mockPreparedStatement);
-             when(mockResultSet.next()).thenReturn(true); // Reunion found
-             when(mockResultSet.getString("type")).thenReturn("STANDARD");
-             when(mockResultSet.getInt("organisateur_id")).thenReturn(1); // Organizer is "1"
+            when(mockConnection.prepareStatement(startsWith("SELECT type, organisateur_id FROM reunion"))).thenReturn(mockPreparedStatement);
+            when(mockResultSet.next()).thenReturn(true); 
+            when(mockResultSet.getString("type")).thenReturn("STANDARD");
+            when(mockResultSet.getInt("organisateur_id")).thenReturn(1); // Organizer is "1"
 
-             // Execute
-             reunionService.execute(inviteJson, mockSession);
+            reunionService.execute(inviteJson, mockSession);
 
-             // Verify: error response sent
-             ArgumentCaptor<String> responseCaptor = ArgumentCaptor.forClass(String.class);
-             verify(mockBasicRemote).sendText(responseCaptor.capture());
-             JSONObject response = new JSONObject(responseCaptor.getValue());
-             assertEquals("invitationResult", response.getString("type"));
-             assertFalse(response.getBoolean("success"));
-             // Message updated to match exact string from ReunionService
-             assertEquals("Only the organizer can invite members to this reunion.", response.getString("message"));
+            verify(mockBasicRemote).sendText(stringArgumentCaptor.capture());
+            JSONObject response = new JSONObject(stringArgumentCaptor.getValue());
+            assertEquals("invitationResult", response.getString("type"));
+            assertFalse(response.getBoolean("success"));
+            assertEquals("Seul l'organisateur peut inviter des membres à cette réunion.", response.getString("message"));
          }
      }
 
     @Test
     void testInviterMembre_Fail_UserToInviteNotFound() throws Exception {
         try (MockedStatic<Database> dbStaticMock = Mockito.mockStatic(Database.class)) {
-            dbStaticMock.when(Database::getInstance).thenReturn(mockDatabase);
-
-            userProperties.put("userId", "1"); // Organizer
-            userProperties.put("reunionId", "101");
+            dbStaticMock.when(Database::getConnection).thenReturn(mockConnection);
+            when(mockUserProperties.get("userId")).thenReturn("1"); // Organizer
 
             JSONObject inviteJson = new JSONObject();
             inviteJson.put("action", "inviterMembre");
             inviteJson.put("reunionId", "101");
             inviteJson.put("usernameToInvite", "nonExistentUser");
 
-            // Mock: Fetch reunion details
             when(mockConnection.prepareStatement(startsWith("SELECT type, organisateur_id FROM reunion"))).thenReturn(mockPreparedStatement);
             when(mockResultSet.next()).thenReturn(true);
             when(mockResultSet.getString("type")).thenReturn("STANDARD");
             when(mockResultSet.getInt("organisateur_id")).thenReturn(1);
 
-            // Mock: Fetch invitedUser's ID (user not found)
-            PreparedStatement MOCK_invitedUserPs = mock(PreparedStatement.class);
-            ResultSet MOCK_invitedUserRs = mock(ResultSet.class); // Separate mock for this result set
-            when(mockConnection.prepareStatement(startsWith("SELECT id FROM personne WHERE login = ?"))).thenReturn(MOCK_invitedUserPs);
-            when(MOCK_invitedUserPs.executeQuery()).thenReturn(MOCK_invitedUserRs);
-            when(MOCK_invitedUserRs.next()).thenReturn(false); // User "nonExistentUser" not found
+            PreparedStatement mockPsFetchUser = mock(PreparedStatement.class);
+            ResultSet mockRsFetchUser = mock(ResultSet.class);
+            when(mockConnection.prepareStatement(startsWith("SELECT id FROM personne WHERE login = ?"))).thenReturn(mockPsFetchUser);
+            when(mockPsFetchUser.executeQuery()).thenReturn(mockRsFetchUser);
+            when(mockRsFetchUser.next()).thenReturn(false); // User "nonExistentUser" not found
 
             reunionService.execute(inviteJson, mockSession);
 
-            ArgumentCaptor<String> responseCaptor = ArgumentCaptor.forClass(String.class);
-            verify(mockBasicRemote).sendText(responseCaptor.capture());
-            JSONObject response = new JSONObject(responseCaptor.getValue());
+            verify(mockBasicRemote).sendText(stringArgumentCaptor.capture());
+            JSONObject response = new JSONObject(stringArgumentCaptor.getValue());
             assertEquals("invitationResult", response.getString("type"));
             assertFalse(response.getBoolean("success"));
-            assertEquals("User 'nonExistentUser' not found.", response.getString("message"));
+            assertEquals("Utilisateur 'nonExistentUser' non trouvé.", response.getString("message"));
         }
     }
 
     @Test
     void testInviterMembre_Fail_AlreadyParticipating() throws Exception {
         try (MockedStatic<Database> dbStaticMock = Mockito.mockStatic(Database.class)) {
-            dbStaticMock.when(Database::getInstance).thenReturn(mockDatabase);
-
-            userProperties.put("userId", "1"); // Organizer
-            userProperties.put("reunionId", "101");
+            dbStaticMock.when(Database::getConnection).thenReturn(mockConnection);
+            when(mockUserProperties.get("userId")).thenReturn("1"); // Organizer
 
             JSONObject inviteJson = new JSONObject();
             inviteJson.put("action", "inviterMembre");
             inviteJson.put("reunionId", "101");
             inviteJson.put("usernameToInvite", "alreadyInUser");
 
-            // Mock: Fetch reunion details
             when(mockConnection.prepareStatement(startsWith("SELECT type, organisateur_id FROM reunion"))).thenReturn(mockPreparedStatement);
-            when(mockResultSet.next()).thenReturn(true); // Reunion found
+            when(mockResultSet.next()).thenReturn(true); 
             when(mockResultSet.getString("type")).thenReturn("STANDARD");
             when(mockResultSet.getInt("organisateur_id")).thenReturn(1);
 
-            // Mock: Fetch invitedUser's ID (user "alreadyInUser" is ID 3)
-            PreparedStatement MOCK_invitedUserPs = mock(PreparedStatement.class);
-            ResultSet MOCK_invitedUserRs = mock(ResultSet.class);
-            when(mockConnection.prepareStatement(startsWith("SELECT id FROM personne WHERE login = ?"))).thenReturn(MOCK_invitedUserPs);
-            when(MOCK_invitedUserPs.executeQuery()).thenReturn(MOCK_invitedUserRs);
-            when(MOCK_invitedUserRs.next()).thenReturn(true); // User "alreadyInUser" found
-            when(MOCK_invitedUserRs.getInt("id")).thenReturn(3);
+            PreparedStatement mockPsFetchUser = mock(PreparedStatement.class);
+            ResultSet mockRsFetchUser = mock(ResultSet.class);
+            when(mockConnection.prepareStatement(startsWith("SELECT id FROM personne WHERE login = ?"))).thenReturn(mockPsFetchUser);
+            when(mockPsFetchUser.executeQuery()).thenReturn(mockRsFetchUser);
+            when(mockRsFetchUser.next()).thenReturn(true); 
+            when(mockRsFetchUser.getInt("id")).thenReturn(3);
 
-            // Mock: Check if already participating (user 3 IS in reunion 101)
-            PreparedStatement MOCK_participationPs = mock(PreparedStatement.class);
-            ResultSet MOCK_participationRs = mock(ResultSet.class);
-            when(mockConnection.prepareStatement(startsWith("SELECT * FROM participation"))).thenReturn(MOCK_participationPs);
-            when(MOCK_participationPs.executeQuery()).thenReturn(MOCK_participationRs);
-            when(MOCK_participationRs.next()).thenReturn(true); // Already participating
+            PreparedStatement mockPsCheckPart = mock(PreparedStatement.class);
+            ResultSet mockRsCheckPart = mock(ResultSet.class);
+            when(mockConnection.prepareStatement(startsWith("SELECT * FROM participation"))).thenReturn(mockPsCheckPart);
+            when(mockPsCheckPart.executeQuery()).thenReturn(mockRsCheckPart);
+            when(mockRsCheckPart.next()).thenReturn(true); // Already participating
 
             reunionService.execute(inviteJson, mockSession);
 
-            ArgumentCaptor<String> responseCaptor = ArgumentCaptor.forClass(String.class);
-            verify(mockBasicRemote).sendText(responseCaptor.capture());
-            JSONObject response = new JSONObject(responseCaptor.getValue());
+            verify(mockBasicRemote).sendText(stringArgumentCaptor.capture());
+            JSONObject response = new JSONObject(stringArgumentCaptor.getValue());
             assertEquals("invitationResult", response.getString("type"));
             assertFalse(response.getBoolean("success"));
-            assertEquals("'alreadyInUser' is already a participant in this reunion.", response.getString("message"));
+            assertEquals("'alreadyInUser' participe déjà à cette réunion.", response.getString("message"));
         }
     }
-
-    // Add more tests:
-    // - testEnvoyerMessage_Fail_UserNotFound (if sender name lookup fails)
-    // - testInviterMembre_Success_PrivateReunion (check autorisation_reunion_privee insert)
-    // - testInviterMembre_Fail_ReunionNotFound
-    // - Test various error conditions like SQLException during DB operations.
 }

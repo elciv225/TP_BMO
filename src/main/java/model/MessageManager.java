@@ -15,6 +15,14 @@ public class MessageManager {
         this.connection = Database.getConnection();
     }
 
+    /**
+     * @deprecated This method directly saves a message to the database. For real-time chat messages
+     * initiated by users, the standard flow is via WebSocket to {@link serveur.ReunionService#envoyerMessage(JSONObject, Session)},
+     * which handles database saving and broadcasting. This method might be used for other specific purposes
+     * like system-generated messages or offline processing if needed, but it's not part of the main chat flow.
+     * As of current analysis, this method is not actively called in the main user chat message path.
+     */
+    @Deprecated
     public Message envoyerMessage(int personneId, int reunionId, String contenu) throws SQLException {
         String sql = "INSERT INTO message (personne_id, reunion_id, contenu) VALUES (?, ?, ?)";
         try (PreparedStatement pstmt = connection.prepareStatement(sql, PreparedStatement.RETURN_GENERATED_KEYS)) {
@@ -39,8 +47,10 @@ public class MessageManager {
 
     public List<Message> obtenirMessagesReunion(int reunionId) throws SQLException {
         List<Message> messages = new ArrayList<>();
-        String sql = "SELECT m.id, m.personne_id, m.contenu, m.heure_envoi, p.nom, p.prenom " +
-                "FROM message m JOIN personne p ON m.personne_id = p.id " +
+        // Optimisation: Retiré le JOIN avec personne et la sélection de p.nom, p.prenom car non utilisés
+        // pour construire l'objet Message ici. Le nom de l'expéditeur est géré côté client via le JSON.
+        String sql = "SELECT m.id, m.personne_id, m.reunion_id, m.contenu, m.heure_envoi " +
+                "FROM message m " +
                 "WHERE m.reunion_id = ? ORDER BY m.heure_envoi ASC";
         try (PreparedStatement pstmt = connection.prepareStatement(sql)) {
             pstmt.setInt(1, reunionId);
@@ -49,7 +59,7 @@ public class MessageManager {
                 Message message = new Message(
                         rs.getInt("id"),
                         rs.getInt("personne_id"),
-                        rs.getInt("reunion_id"),
+                        rs.getInt("reunion_id"), // reunionId est déjà un paramètre, mais le sélectionner depuis la DB assure la cohérence.
                         rs.getString("contenu")
                 );
                 message.setHeureEnvoi(rs.getTimestamp("heure_envoi").toLocalDateTime());

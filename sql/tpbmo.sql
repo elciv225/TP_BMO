@@ -99,3 +99,41 @@ ALTER TABLE message
     ADD CONSTRAINT fk_message_reunion
         FOREIGN KEY (reunion_id) REFERENCES reunion (id) ON DELETE CASCADE;
 
+-- 3. Ajout des Index pour l'optimisation des requêtes
+
+-- Index pour la table message (souvent interrogée par reunion_id et ordonnée par heure_envoi)
+CREATE INDEX idx_message_reunion_id ON message (reunion_id);
+CREATE INDEX idx_message_heure_envoi ON message (heure_envoi);
+CREATE INDEX idx_message_personne_id ON message (personne_id); -- Utile pour retrouver les messages d'un utilisateur
+
+-- Index pour la table participation
+-- Le PK (personne_id, reunion_id) est déjà indexé.
+-- Un index sur reunion_id seul peut être utile pour lister rapidement les participants d'une réunion.
+CREATE INDEX idx_participation_reunion_id ON participation (reunion_id);
+-- Un index sur personne_id seul peut être utile pour lister les réunions d'une personne.
+CREATE INDEX idx_participation_personne_id ON participation (personne_id);
+
+
+-- Index pour la table reunion
+-- reunion.id est PK.
+-- Index sur 'nom' si les recherches par nom de réunion sont fréquentes.
+CREATE INDEX idx_reunion_nom ON reunion (nom);
+-- Index sur 'organisateur_id' pour retrouver rapidement les réunions d'un organisateur.
+CREATE INDEX idx_reunion_organisateur_id ON reunion (organisateur_id);
+
+-- Index pour la table personne
+-- personne.id est PK.
+-- personne.login a une contrainte UNIQUE, qui crée déjà un index.
+
+-- Index pour la table demande_parole
+-- La contrainte UNIQUE (personne_id, reunion_id, statut) indexe déjà ces colonnes.
+-- Des index individuels peuvent être utiles si les recherches se font sur des colonnes uniques de cette contrainte.
+CREATE INDEX idx_demande_parole_reunion_id ON demande_parole (reunion_id);
+CREATE INDEX idx_demande_parole_personne_id ON demande_parole (personne_id);
+CREATE INDEX idx_demande_parole_statut ON demande_parole (statut);
+
+-- Index pour la table autorisation_reunion_privee
+-- Le PK (personne_id, reunion_id) est déjà indexé.
+-- Un index sur reunion_id seul peut être utile pour lister rapidement les utilisateurs autorisés pour une réunion privée.
+CREATE INDEX idx_autorisation_reunion_privee_reunion_id ON autorisation_reunion_privee (reunion_id);
+

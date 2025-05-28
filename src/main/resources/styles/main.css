@@ -1,6 +1,6 @@
 /* === Global Styles === */
 .root {
-    -fx-font-family: "Arial", sans-serif;
+    -fx-font-family: "Arial", sans-serif; /* Consider making this more modern like "System" or "Segoe UI" if appropriate */
     -fx-background-color: #f0f2f5; /* Slightly adjusted global background */
 }
 
@@ -17,13 +17,15 @@ Label {
     -fx-text-fill: #333333;
 }
 
-/* Default TextField styling - largely superseded by .styled-text-field */
+/* Default TextField styling - properties here are defaults if .styled-text-field is not applied */
+/* Consider removing if .styled-text-field is always used or make .styled-text-field more comprehensive */
 TextField {
-    /* Properties here are defaults if .styled-text-field is not applied */
-    -fx-pref-height: 35px;
-    -fx-border-radius: 5px;
-    -fx-border-color: #cccccc;
-    -fx-padding: 5px 10px;
+    -fx-pref-height: 35px; /* Default height */
+    -fx-border-radius: 5px; /* Default radius */
+    -fx-border-color: #cccccc; /* Default border color */
+    -fx-padding: 5px 10px; /* Default padding */
+    -fx-font-size: 1em; /* Default font size */
+    -fx-background-color: #ffffff; /* Default background */
 }
 
 /* Default Button styling - largely superseded by .primary-button or ID-specific styles */
@@ -39,24 +41,36 @@ Button {
 
 Button:hover {
     -fx-background-color: #4cae4c;
+    -fx-cursor: hand; /* Add default hand cursor for all buttons on hover */
 }
 
 Button:pressed {
     -fx-background-color: #3e8f3e;
 }
 
-/* === Utility Classes === */
+/* === Layout Styles === */
+/* Base for page-level containers, ensuring consistent padding and alignment */
 .page-container {
     -fx-background-color: #f4f6f8; /* Consistent light background for pages */
     -fx-padding: 30px;
     -fx-alignment: top-center;
     -fx-spacing: 25px; /* Default spacing for elements within a page container */
-    /* Common border/shadow effect for page containers, if desired for all */
-    /* -fx-border-color: #ddd; */
-    /* -fx-border-width: 1px; */
-    /* -fx-border-radius: 8px; */
-    /* -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.08), 15, 0.6, 0, 0); */
 }
+
+/* Base for content boxes/cards within pages */
+.content-box {
+    -fx-background-color: #ffffff;
+    -fx-border-radius: 8px;
+    -fx-background-radius: 8px;
+    -fx-padding: 25px;
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.07), 12, 0.4, 0, 0);
+    -fx-spacing: 15px; /* Default spacing for elements within a content box */
+}
+
+
+/* === Utility Classes === */
+/* Moved .page-container to Layout Styles */
+/* .main-title and .styled-text-field remain here as general utilities */
 
 .main-title {
     -fx-font-size: 2.2em;
@@ -66,96 +80,195 @@ Button:pressed {
 }
 
 .styled-text-field {
-    -fx-pref-height: 45px;
-    -fx-border-color: #bdc3c7;
-    -fx-border-radius: 25px; /* Fully rounded for modern look */
-    -fx-background-radius: 25px;
-    -fx-background-color: #ffffff;
-    -fx-padding: 5px 20px; /* Inner padding */
-    -fx-font-size: 1.1em;
-    -fx-prompt-text-fill: #bababa;
+    -fx-pref-height: 45px; /* Overrides TextField default */
+    -fx-border-color: #bdc3c7; /* Specific border color */
+    -fx-border-radius: 25px; /* Fully rounded for modern look, overrides TextField default */
+    -fx-background-radius: 25px; /* Matches border-radius */
+    -fx-background-color: #ffffff; /* Explicit white background */
+    -fx-padding: 5px 20px; /* Inner padding, overrides TextField default */
+    -fx-font-size: 1.1em; /* Slightly larger font, overrides TextField default */
+    -fx-prompt-text-fill: #bababa; /* Color for prompt text */
     -fx-max-width: 350px; /* Default max-width, can be overridden by ID */
 }
 
 .styled-text-field:focused {
     -fx-border-color: #3498db; /* Primary accent color for focus */
-    -fx-background-color: #ffffff;
+    -fx-background-color: #ffffff; /* Ensure background remains white on focus */
     -fx-effect: dropshadow(gaussian, rgba(52, 152, 219,0.3), 8, 0.2, 0, 0); /* Subtle glow */
 }
 
-.primary-button {
-    -fx-pref-height: 40px; /* Base height */
-    -fx-background-color: #007bff; /* Standard blue */
-    -fx-text-fill: white;
-    -fx-font-weight: bold;
-    -fx-font-size: 1em; /* Base font size */
-    -fx-border-radius: 20px; /* Rounded corners */
-    -fx-background-radius: 20px;
-    -fx-padding: 0 25px; /* Horizontal padding */
-    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.1), 4, 0.2, 0, 1);
-    -fx-min-width: 180px; /* Good minimum width */
-    -fx-alignment: center;
+
+/* === Component Styles === */
+/* Default VBox styling - can be overridden by more specific selectors */
+VBox {
+    /* Consider removing default VBox padding/spacing if .page-container handles it well */
+    /* -fx-spacing: 10; */
+    /* -fx-padding: 15; */
 }
 
-.primary-button:hover {
-    -fx-background-color: #0056b3; /* Darker shade on hover */
+/* Default Label styling - can be overridden by utility classes or specific selectors */
+Label {
+    -fx-font-size: 1em; /* Standardized base font size */
+    -fx-text-fill: #333333;
+}
+
+/* Default TextField styling - properties here are defaults if .styled-text-field is not applied */
+/* Consider removing if .styled-text-field is always used or make .styled-text-field more comprehensive */
+TextField {
+    -fx-pref-height: 35px; /* Default height */
+    -fx-border-radius: 5px; /* Default radius */
+    -fx-border-color: #cccccc; /* Default border color */
+    -fx-padding: 5px 10px; /* Default padding */
+    -fx-font-size: 1em; /* Default font size */
+    -fx-background-color: #ffffff; /* Default background */
+}
+
+/* Default Button styling - largely superseded by .primary-button or ID-specific styles */
+Button {
+    -fx-pref-height: 35px;
+    -fx-background-color: #5cb85c; /* Default green - consider if this is a good default or remove */
+    -fx-text-fill: white;
+    -fx-font-weight: bold;
+    -fx-border-radius: 5px;
+    -fx-background-radius: 5px;
+    -fx-padding: 0 15px;
+}
+
+Button:hover {
+    -fx-background-color: #4cae4c;
+    -fx-cursor: hand; /* Add default hand cursor for all buttons on hover */
+}
+
+Button:pressed {
+    -fx-background-color: #3e8f3e;
+}
+
+/* Base style for all buttons */
+.button-base {
+    -fx-pref-height: 40px;
+    -fx-text-fill: white;
+    -fx-font-weight: bold;
+    -fx-font-size: 1em;
+    -fx-border-radius: 20px;
+    -fx-background-radius: 20px;
+    -fx-padding: 0 25px;
+    -fx-alignment: center;
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.1), 4, 0.2, 0, 1);
+}
+
+.button-base:hover {
     -fx-cursor: hand;
     -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.2), 6, 0.3, 0, 1.5);
 }
 
+.button-base:pressed {
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.05), 2, 0.1, 0, 0.5);
+}
+
+.primary-button {
+    /* This class would typically be added to a Button node that also has .button-base,
+       or .button-base styles are applied by default if this is the primary action button type.
+       For JavaFX, style classes are additive, so specific properties here override .button-base. */
+    -fx-background-color: #007bff; /* Standard blue */
+    -fx-min-width: 180px; /* Good minimum width */
+    /* inherits from .button-base:
+        -fx-pref-height: 40px;
+        -fx-text-fill: white;
+        -fx-font-weight: bold;
+        -fx-font-size: 1em;
+        -fx-border-radius: 20px;
+        -fx-background-radius: 20px;
+        -fx-padding: 0 25px;
+        -fx-alignment: center;
+        -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.1), 4, 0.2, 0, 1);
+    */
+}
+
+.primary-button:hover {
+    -fx-background-color: #0056b3; /* Darker shade on hover */
+    /* inherits -fx-cursor and -fx-effect from .button-base:hover */
+}
+
 .primary-button:pressed {
     -fx-background-color: #004085; /* Even darker on press */
-    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.05), 2, 0.1, 0, 0.5);
+    /* inherits -fx-effect from .button-base:pressed */
 }
 
 
 /* === Screen: Authentication (auth.fxml) === */
+/* .auth-container uses .page-container for base layout and .content-box for the card look */
 .auth-container {
-    /* Extends .page-container, specific overrides below */
-    -fx-alignment: center; /* Specific alignment for auth */
+    /* Properties from .page-container like -fx-alignment: top-center might be overridden if needed,
+       or a more specific inner container can use .content-box */
+    -fx-alignment: center; /* Override .page-container alignment for this specific screen */
+    /* If .auth-container is the VBox directly inside the scene root, it might use .page-container styles.
+       If there's an inner panel for the auth form, that panel could use .content-box.
+       Assuming .auth-container itself is the main page area.
+       If it's meant to be a card on the page:
+       fx-background-color: #ffffff; (from .content-box)
+       fx-border-radius: 8px; (from .content-box)
+       fx-effect: dropshadow... (from .content-box)
+       fx-padding: 25px (from .content-box)
+       Let's assume it's a page container with a content box inside it (FXML structure dependent)
+       So, the FXML might have <VBox styleClass="page-container auth-page-specific-bg"> <VBox styleClass="content-box auth-form-box"> ... </VBox> </VBox>
+       For now, will assume .auth-container is a specialization of .page-container and might contain a .content-box.
+       The existing specific border/effect suggests it IS the content box itself.
+    */
+    /* Replacing with .content-box properties and specific overrides */
+    -fx-background-color: #ffffff; /* from .content-box */
+    -fx-padding: 30px; /* from .page-container, or 25px from .content-box. Let's stick to page default. */
+    -fx-alignment: center; /* Specific alignment for auth, overrides .page-container's top-center */
+    -fx-spacing: 25px; /* from .page-container */
     -fx-border-color: #ddd; /* Specific border for this container */
     -fx-border-width: 1px;
-    -fx-border-radius: 8px;
-    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.08), 15, 0.6, 0, 0);
+    -fx-border-radius: 8px; /* from .content-box */
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.08), 15, 0.6, 0, 0); /* Specific effect */
+    -fx-max-width: 500px; /* Added to constrain auth form width */
 }
 
-/* .main-title used for auth title, no specific override needed for .auth-container .title-label */
+/* .main-title is used for auth title, no specific override needed for .auth-container .title-label */
 
 #txtLogin, #txtPassword {
-    /* .styled-text-field is applied. Only unique properties remain. */
-    -fx-max-width: 300px;
+    /* .styled-text-field is applied. Only unique property is max-width. */
+    -fx-max-width: 300px; /* Specific max-width for these fields */
+    /* All other properties like height, border, padding, font-size, prompt-text-fill are inherited from .styled-text-field */
 }
 
-#connexion { /* Auth button */
-    /* .primary-button is applied. Specific color and size below. */
+#connexion { /* Auth button - uses .primary-button as base, then overrides */
     -fx-background-color: #3498db; /* Specific blue for auth button */
-    -fx-pref-height: 45px;
-    -fx-font-size: 1.1em;
-    -fx-min-width: 200px;
-    /* Hover and pressed states will use .primary-button:hover/pressed if not overridden,
-       but since background color is different, we might need to specify them here too if we want different hover colors.
-       For now, assuming primary-button hover/pressed is acceptable or will be adjusted. */
+    -fx-pref-height: 45px; /* Override from .button-base */
+    -fx-font-size: 1.1em; /* Override from .button-base */
+    -fx-min-width: 200px; /* Override from .primary-button */
+    /* Inherits border-radius, text-fill, font-weight, padding, alignment, effects from .button-base and .primary-button */
 }
 #connexion:hover {
-    -fx-background-color: #2980b9;
+    -fx-background-color: #2980b9; /* Specific hover color */
+    /* Inherits cursor and effect from .button-base:hover */
 }
 #connexion:pressed {
-    -fx-background-color: #1f618d;
+    -fx-background-color: #1f618d; /* Specific pressed color */
+    /* Inherits effect from .button-base:pressed */
 }
 
 
 /* === Screen: Connect to Server (connexionServeur.fxml) === */
+/* .connexion-container also behaves like a content box centered on a page */
 .connexion-container {
-    /* Extends .page-container, specific overrides below */
-    -fx-alignment: center; /* Specific alignment for this screen */
-    -fx-spacing: 20px; /* Specific spacing */
-    -fx-border-color: #ddd;
+    /* Assuming this is the main content box on the server connection page */
+    /* Inherits from .page-container if it's the root, or applies .content-box if it's an inner panel */
+    /* Similar to .auth-container, applying .content-box properties with overrides */
+    -fx-background-color: #ffffff; /* from .content-box */
+    -fx-padding: 30px; /* from .page-container or 25px from .content-box */
+    -fx-alignment: center; /* Specific alignment, overrides .page-container's top-center */
+    -fx-spacing: 20px; /* Specific spacing, overrides .page-container or .content-box */
+    -fx-border-color: #ddd; /* Specific border */
     -fx-border-width: 1px;
-    -fx-border-radius: 8px;
-    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.08), 15, 0.6, 0, 0);
+    -fx-border-radius: 8px; /* from .content-box */
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.08), 15, 0.6, 0, 0); /* Specific effect */
+    -fx-max-width: 500px; /* Added to constrain width */
 }
 
-/* .main-title used for welcome title, no specific override needed for .connexion-container .welcome-title */
+/* .main-title is used for welcome title */
 
 .connexion-container .ip-label { /* Specific label styling */
     -fx-font-size: 1em;
@@ -164,55 +277,62 @@ Button:pressed {
 }
 
 #txtIpServeur {
-    /* .styled-text-field is applied. Only unique properties remain. */
-    -fx-max-width: 300px;
+    /* .styled-text-field is applied. Only unique property is max-width. */
+    -fx-max-width: 300px; /* Specific max-width */
+    /* All other properties inherited from .styled-text-field */
 }
 
-#btnConnexionServeur { /* Connect to server button - distinct style */
-    -fx-pref-height: 45px;
+#btnConnexionServeur { /* Connect to server button - distinct style, but can use .button-base */
     -fx-background-color: #27ae60; /* Green for connect */
-    -fx-text-fill: white;
-    -fx-font-weight: bold;
-    -fx-font-size: 1.1em;
-    -fx-border-radius: 25px;
-    -fx-background-radius: 25px;
-    -fx-padding: 0 30px;
+    -fx-pref-height: 45px; /* Override from .button-base */
+    -fx-font-size: 1.1em; /* Override from .button-base */
+    -fx-border-radius: 25px; /* Slightly different radius */
+    -fx-background-radius: 25px; /* Slightly different radius */
+    -fx-padding: 0 30px; /* Specific padding */
     -fx-min-width: 200px;
-    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.15), 5, 0.2, 0, 1);
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.15), 5, 0.2, 0, 1); /* Custom effect */
+    /* Inherits text-fill, font-weight, alignment from .button-base */
 }
 
 #btnConnexionServeur:hover {
     -fx-background-color: #229954;
-    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.25), 8, 0.4, 0, 2);
-    -fx-cursor: hand;
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.25), 8, 0.4, 0, 2); /* Custom hover effect */
+    /* Inherits cursor from .button-base:hover */
 }
 
 #btnConnexionServeur:pressed {
     -fx-background-color: #1e8449;
-    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.1), 3, 0.1, 0, 0);
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.1), 3, 0.1, 0, 0); /* Custom pressed effect */
 }
 
 
 /* === Screen: User Space (espaceUtilisateur.fxml) === */
+/* .espace-utilisateur-container is a .page-container */
 .espace-utilisateur-container {
-    /* Extends .page-container. Specific background color. */
-    -fx-background-color: #eef1f5;
+    /* Uses .page-container defaults. Specific background color if different from default .page-container. */
+    -fx-background-color: #eef1f5; /* Specific page background */
+    /* Inherits padding, alignment, spacing from .page-container */
 }
 
-/* .main-title used for welcome label, no specific override needed for .espace-utilisateur-container .main-title */
+/* .main-title is used for welcome label */
 
+/* .section-box already matches the new .content-box utility class */
 .section-box {
-    -fx-padding: 25px;
-    -fx-background-color: #ffffff;
-    -fx-border-radius: 8px;
-    -fx-background-radius: 8px;
-    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.07), 12, 0.4, 0, 0);
-    -fx-spacing: 15px;
-    -fx-alignment: center-left;
-    -fx-max-width: 500px;
+    /* This class now effectively extends .content-box.
+       If its properties are identical to .content-box, it can be replaced in FXML.
+       For now, ensuring it aligns with .content-box. */
+    -fx-background-color: #ffffff; /* from .content-box */
+    -fx-border-radius: 8px; /* from .content-box */
+    -fx-background-radius: 8px; /* from .content-box */
+    -fx-padding: 25px; /* from .content-box */
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.07), 12, 0.4, 0, 0); /* from .content-box */
+    -fx-spacing: 15px; /* from .content-box */
+    /* Specific properties for .section-box that differ from a generic .content-box */
+    -fx-alignment: center-left; /* Specific alignment */
+    -fx-max-width: 500px; /* Specific max-width */
 }
 
-.section-box .section-title {
+.section-box .section-title { /* This is a utility style, could be .sub-title or similar */
     -fx-font-size: 1.4em;
     -fx-font-weight: bold;
     -fx-text-fill: #34495e;
@@ -227,453 +347,351 @@ Button:pressed {
 }
 
 #txtTitreReunion {
-    /* .styled-text-field is applied. Specifics for this instance. */
-    -fx-pref-height: 40px; /* Slightly different height than base .styled-text-field */
-    -fx-border-color: #d1d8e0;
-    -fx-background-color: #fdfdfd;
-    -fx-border-radius: 20px; /* Different radius */
-    -fx-background-radius: 20px;
-    -fx-font-size: 1em; /* Different font size */
-    -fx-prompt-text-fill: #b0bec5;
+    /* .styled-text-field is applied. Overrides some properties for a custom look. */
+    -fx-pref-height: 40px; /* Override: Slightly different height */
+    -fx-border-color: #d1d8e0; /* Override: Different border color */
+    -fx-background-color: #fdfdfd; /* Override: Different background color */
+    -fx-border-radius: 20px; /* Override: Different radius */
+    -fx-background-radius: 20px; /* Override: Different radius */
+    -fx-font-size: 1em; /* Override: Different font size */
+    -fx-prompt-text-fill: #b0bec5; /* Override: Different prompt text color */
+    /* max-width will be inherited from .styled-text-field (350px) unless set explicitly in FXML or here */
 }
 #txtTitreReunion:focused {
-    -fx-border-color: #007bff; /* Uses primary button color for focus */
-    -fx-background-color: #ffffff;
-    -fx-effect: dropshadow(gaussian, rgba(0, 123, 255, 0.25), 6, 0.15, 0, 0);
+    -fx-border-color: #007bff; /* Override: Uses primary button color for focus border */
+    -fx-background-color: #ffffff; /* Override: Ensure background is white on focus */
+    -fx-effect: dropshadow(gaussian, rgba(0, 123, 255, 0.25), 6, 0.15, 0, 0); /* Override: Custom focus effect */
 }
 
 /* .primary-button class will be applied to buttons in Espace Utilisateur */
 
 
 /* === Screen: Admin Space (espaceAdministrateur.fxml) === */
+/* .espace-administrateur-container is a .page-container */
 .espace-administrateur-container {
-    /* Extends .page-container. Specific background and min-dimensions. */
-    -fx-background-color: #e8eaed;
-    -fx-min-height: 500px;
-    -fx-min-width: 700px;
+    /* Uses .page-container defaults. */
+    -fx-background-color: #e8eaed; /* Specific page background */
+    -fx-min-height: 500px; /* Specific min-height for this page */
+    -fx-min-width: 700px; /* Specific min-width for this page */
+    /* Inherits padding, alignment, spacing from .page-container */
 }
 
-/* .main-title used for admin panel title. */
+/* .main-title is used for admin panel title. */
 
+/* .admin-content-area is a .content-box */
 .admin-content-area {
-    -fx-background-color: #ffffff;
-    -fx-padding: 20px;
-    -fx-border-radius: 8px;
-    -fx-background-radius: 8px;
-    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.07), 12, 0.4, 0, 0);
+    /* Extends .content-box */
+    -fx-background-color: #ffffff; /* from .content-box */
+    -fx-border-radius: 8px; /* from .content-box */
+    -fx-background-radius: 8px; /* from .content-box */
+    -fx-padding: 20px; /* Slightly different padding than .content-box default (25px) */
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.07), 12, 0.4, 0, 0); /* from .content-box */
+    -fx-spacing: 15px; /* from .content-box, can be overridden if needed */
+    /* Specific properties */
     -fx-min-height: 300px;
 }
 
-.placeholder-label { /* Specific to admin content area placeholder */
+.placeholder-label { /* This is a utility text style, could be .text-muted or .placeholder-text */
     -fx-font-size: 1.2em;
     -fx-text-fill: #7f8c8d;
     -fx-alignment: center;
 }
 
 
-/* === Screen: Reunion (reunion.fxml) === */
+/* === Screen: Reunion (reunion.fxml) - WhatsApp Theme === */
+/* This section consolidates all WhatsApp specific styles for the reunion screen. */
+
+/* Main container for the reunion screen */
 .reunion-container {
-    /* Extends .page-container. Specific padding/spacing. */
-    -fx-padding: 20px;
-    -fx-spacing: 15px;
+    -fx-background-color: #ffffff; /* Overrides .page-container's #f4f6f8 */
+    -fx-spacing: 0; /* No spacing between header, message area, input area */
+    -fx-padding: 0; /* No padding for the main container */
+    -fx-alignment: top-center; /* from .page-container, probably still relevant */
 }
 
-#connectionStatus {
-    -fx-font-size: 0.9em;
-    -fx-text-fill: #d9534f; /* Default to red (disconnected) */
-    -fx-padding: 5px 0 10px 0;
-    -fx-font-weight: normal;
+/* Connection Status Header */
+#connectionStatus { /* Definitive style for WhatsApp theme */
+    -fx-background-color: #128c7e; /* WhatsApp green header */
+    -fx-text-fill: white;
+    -fx-padding: 8px 15px;
+    -fx-font-size: 14px; /* Specific font size */
+    -fx-font-weight: bold; /* Specific font weight */
 }
 
-#connectionStatus.connected {
-    -fx-text-fill: #5cb85c; /* Green for connected */
+#connectionStatus.disconnected {
+    -fx-background-color: #dc3545; /* Red for disconnected, text remains white */
 }
 
-#messageArea {
-    -fx-spacing: 8px;
-    -fx-padding: 10px;
-    -fx-background-color: #ffffff;
-    -fx-border-radius: 5px;
-    -fx-background-radius: 5px;
-    -fx-pref-height: 300px;
-}
-
-#messageArea .label { /* Message bubbles */
-    -fx-padding: 8px 12px;
-    -fx-background-color: #e1eef7;
-    -fx-background-radius: 10px;
-    -fx-wrap-text: true;
-    -fx-max-width: 70%;
-    -fx-alignment: top-left;
-    -fx-font-size: 1em;
-    -fx-font-weight: normal;
-    -fx-text-fill: #333333;
-}
-
-#inputArea { /* HBox for message input and send button */
-    -fx-padding: 15px 0 0 0;
-    -fx-spacing: 10px;
-    -fx-alignment: center-left;
-}
-
-#messageInput {
-    /* .styled-text-field is applied. Specifics for this instance. */
-    -fx-pref-height: 40px;
-    -fx-border-color: #cccccc; /* Standard border */
-    -fx-border-radius: 20px;
-    -fx-background-radius: 20px;
-    -fx-padding: 5px 15px;
-    -fx-prompt-text-fill: #999999;
-    -fx-font-size: 1em;
-    -fx-pref-width: 450px; /* Specific width */
-    -fx-max-width: 450px; /* Override .styled-text-field max-width */
-}
-/* Focus state for #messageInput will use .styled-text-field:focused */
-
-#sendButton { /* Send button in chat */
-    /* .primary-button is applied. Specifics for this instance. */
-    -fx-pref-height: 40px; /* Matches .primary-button */
-    /* background-color and text-fill will come from .primary-button */
-    -fx-border-radius: 20px; /* Matches .primary-button */
-    -fx-background-radius: 20px; /* Matches .primary-button */
-    -fx-padding: 0 20px; /* Specific padding */
-    -fx-pref-width: 100px; /* Specific width */
-    -fx-min-width: 100px; /* Override .primary-button min-width */
-}
-
-/* === Styles spécifiques pour les messages de réunion === */
-
-/* Messages de chat normaux */
-.message-bubble {
-    -fx-padding: 10px 15px;
-    -fx-background-color: #e8f4fd;
-    -fx-background-radius: 18px;
-    -fx-border-radius: 18px;
-    -fx-wrap-text: true;
-    -fx-max-width: 400px;
-    -fx-font-size: 1em;
-    -fx-text-fill: #2c3e50;
-    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.1), 3, 0.2, 0, 1);
-    -fx-margin: 5px 0;
-}
-
-/* Messages système (arrivée/départ d'utilisateurs) */
-.system-message {
-    -fx-padding: 8px 12px;
-    -fx-background-color: #f8f9fa;
-    -fx-background-radius: 15px;
-    -fx-border-radius: 15px;
-    -fx-font-size: 0.9em;
-    -fx-text-fill: #6c757d;
-    -fx-font-style: italic;
-    -fx-alignment: center;
-    -fx-max-width: 300px;
-    -fx-border-color: #dee2e6;
-    -fx-border-width: 1px;
-}
-
-/* Statut de connexion - état connecté */
-.connectionStatus.connected {
-    -fx-text-fill: #28a745;
-    -fx-font-weight: bold;
-}
-
-/* Statut de connexion - état déconnecté */
-.connectionStatus.disconnected {
-    -fx-text-fill: #dc3545;
-    -fx-font-weight: bold;
-}
-
-/* Zone d'invitation pour organisateurs */
-.invitation-area {
-    -fx-background-color: #fff3cd;
-    -fx-border-color: #ffeaa7;
-    -fx-border-width: 1px;
-    -fx-border-radius: 8px;
-    -fx-background-radius: 8px;
-    -fx-padding: 15px;
-}
-
-/* Bouton d'invitation spécifique */
-.invite-button {
-    -fx-background-color: #17a2b8;
-    -fx-pref-width: 100px;
-    -fx-min-width: 100px;
-}
-
-.invite-button:hover {
-    -fx-background-color: #138496;
-}
-
-.invite-button:pressed {
-    -fx-background-color: #0e6674;
-}
-
-/* Champ de saisie d'invitation */
-.invite-user-field {
-    -fx-prompt-text-fill: #17a2b8;
-}
-
-/* Amélioration de la zone de messages */
-#messageArea {
-    -fx-background-color: #ffffff;
-    -fx-border-color: #e9ecef;
-    -fx-border-width: 1px;
-    -fx-border-radius: 8px;
-    -fx-background-radius: 8px;
-    -fx-padding: 15px;
-    -fx-spacing: 10px;
-}
-
-/* Scroll pane pour les messages */
-.scroll-pane {
-    -fx-background-color: transparent;
-    -fx-border-color: transparent;
-}
-
-.scroll-pane .viewport {
-    -fx-background-color: transparent;
-}
-
-.scroll-pane .content {
-    -fx-background-color: transparent;
-}
-
-/* === Styles WhatsApp pour les messages de chat === */
-
-/* Zone de messages principale */
-#messageArea {
-    -fx-background-color: #e5ddd5; /* Couleur de fond WhatsApp */
-    -fx-padding: 10px;
-    -fx-spacing: 8px;
+/* Message Area */
+#messageArea { /* Definitive style for WhatsApp theme - this is the VBox inside the ScrollPane */
+    -fx-background-color: #e5ddd5; /* WhatsApp chat background color */
+    /* Padding for messageArea VBox itself is handled by scroll-pane .content's padding */
+    -fx-spacing: 8px; /* Spacing between individual message HBox/VBox containers */
     -fx-border-radius: 0;
     -fx-background-radius: 0;
+    -fx-pref-height: 300px; /* Default height, can be adjusted by FXML layout */
+    -fx-border-width: 0; /* Ensure no borders from other rules */
 }
 
-/* Conteneur de message individuel */
-.message-container {
-    -fx-alignment: center-left;
-    -fx-max-width: 80%;
-    -fx-padding: 0;
-}
-
-/* Messages reçus (autres utilisateurs) */
-.message-bubble-received {
-    -fx-background-color: #ffffff;
-    -fx-background-radius: 18px 18px 18px 5px;
-    -fx-border-radius: 18px 18px 18px 5px;
-    -fx-padding: 8px 12px;
-    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.13), 1, 0.3, 0, 1);
-    -fx-font-size: 14px;
-    -fx-text-fill: #000000;
-    -fx-wrap-text: true;
-    -fx-alignment: center-left;
-    -fx-margin: 0 50px 0 0; /* Marge à droite pour différencier */
-}
-
-/* Messages envoyés (utilisateur actuel) */
-.message-bubble-sent {
-    -fx-background-color: #dcf8c6; /* Vert WhatsApp */
-    -fx-background-radius: 18px 18px 5px 18px;
-    -fx-border-radius: 18px 18px 5px 18px;
-    -fx-padding: 8px 12px;
-    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.13), 1, 0.3, 0, 1);
-    -fx-font-size: 14px;
-    -fx-text-fill: #000000;
-    -fx-wrap-text: true;
-    -fx-alignment: center-right;
-    -fx-margin: 0 0 0 50px; /* Marge à gauche pour différencier */
-}
-
-/* Nom de l'expéditeur */
-.message-sender {
-    -fx-font-size: 12px;
-    -fx-font-weight: bold;
-    -fx-text-fill: #128c7e; /* Couleur WhatsApp */
-    -fx-padding: 0 0 2px 0;
-}
-
-/* Heure du message */
-.message-time {
-    -fx-font-size: 11px;
-    -fx-text-fill: #667781;
-    -fx-padding: 2px 0 0 0;
-    -fx-alignment: bottom-right;
-}
-
-/* Messages système */
-.system-message {
-    -fx-background-color: #fff2cc;
-    -fx-background-radius: 15px;
-    -fx-border-radius: 15px;
-    -fx-padding: 6px 10px;
-    -fx-font-size: 12px;
-    -fx-text-fill: #8b7355;
-    -fx-font-style: italic;
-    -fx-alignment: center;
-    -fx-max-width: 250px;
-    -fx-border-color: #f0e68c;
-    -fx-border-width: 1px;
-    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.1), 1, 0.2, 0, 0.5);
-}
-
-/* Zone de saisie de message */
-#messageInput {
-    -fx-background-color: #ffffff;
-    -fx-border-color: #d1d7db;
-    -fx-border-width: 1px;
-    -fx-border-radius: 20px;
-    -fx-background-radius: 20px;
-    -fx-padding: 8px 15px;
-    -fx-font-size: 14px;
-    -fx-prompt-text-fill: #9ca3af;
-    -fx-min-height: 35px;
-    -fx-pref-height: 35px;
-}
-
-#messageInput:focused {
-    -fx-border-color: #128c7e;
-    -fx-background-color: #ffffff;
-    -fx-effect: dropshadow(gaussian, rgba(18, 140, 126, 0.3), 6, 0.15, 0, 0);
-}
-
-/* Bouton d'envoi */
-#sendButton {
-    -fx-background-color: #128c7e; /* Vert WhatsApp */
-    -fx-text-fill: white;
-    -fx-border-radius: 50%;
-    -fx-background-radius: 50%;
-    -fx-min-width: 40px;
-    -fx-pref-width: 40px;
-    -fx-min-height: 40px;
-    -fx-pref-height: 40px;
-    -fx-font-size: 16px;
-    -fx-font-weight: bold;
-    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.2), 4, 0.3, 0, 1);
-}
-
-#sendButton:hover {
-    -fx-background-color: #0f7a6b;
-    -fx-cursor: hand;
-    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.3), 6, 0.4, 0, 1.5);
-}
-
-#sendButton:pressed {
-    -fx-background-color: #0d6b5d;
-    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.15), 2, 0.2, 0, 0.5);
-}
-
-/* Zone d'input (HBox conteneur) */
-#inputArea {
-    -fx-background-color: #f0f0f0;
-    -fx-padding: 10px 15px;
-    -fx-spacing: 10px;
-    -fx-alignment: center-left;
-    -fx-border-color: #d1d7db;
-    -fx-border-width: 1px 0 0 0; /* Bordure uniquement en haut */
-}
-
-/* ScrollPane pour les messages */
-.scroll-pane {
-    -fx-background-color: #e5ddd5;
-    -fx-border-color: transparent;
+/* ScrollPane for Messages */
+.scroll-pane { /* Applied to ScrollPane wrapping #messageArea's content (VBox) */
+    -fx-background-color: #e5ddd5; /* Match message area background */
+    -fx-border-color: transparent; /* No border for the scrollpane itself */
+    -fx-hbar-policy: never; /* Typically no horizontal scrollbar in chat */
+    -fx-vbar-policy: as-needed;
 }
 
 .scroll-pane .viewport {
-    -fx-background-color: #e5ddd5;
+    -fx-background-color: #e5ddd5; /* Match message area background */
 }
 
-.scroll-pane .content {
-    -fx-background-color: #e5ddd5;
+.scroll-pane .content { /* This is the VBox holding the messages */
+    -fx-background-color: #e5ddd5; /* Match message area background */
+    -fx-padding: 10px; /* Padding for the content VBox within the scrollable area */
 }
 
-/* Barre de scroll */
+/* Scroll Bar Styling */
 .scroll-bar:vertical {
     -fx-background-color: transparent;
-    -fx-border-color: transparent;
-    -fx-background-radius: 0;
-    -fx-border-radius: 0;
-    -fx-pref-width: 8px;
+    -fx-pref-width: 8px; /* Slimmer scrollbar */
+    -fx-padding: 2px; /* Padding around the track */
+}
+
+.scroll-bar:vertical .track-background {
+    -fx-background-color: transparent;
 }
 
 .scroll-bar:vertical .track {
-    -fx-background-color: rgba(0,0,0,0.1);
+    -fx-background-color: rgba(0,0,0,0.1); /* Light track color */
     -fx-background-radius: 4px;
-    -fx-border-color: transparent;
+    -fx-border-radius: 4px;
 }
 
 .scroll-bar:vertical .thumb {
-    -fx-background-color: rgba(0,0,0,0.3);
+    -fx-background-color: rgba(0,0,0,0.3); /* Darker thumb */
     -fx-background-radius: 4px;
-    -fx-border-color: transparent;
+    -fx-border-radius: 4px;
 }
 
 .scroll-bar:vertical .thumb:hover {
     -fx-background-color: rgba(0,0,0,0.5);
 }
 
-/* En-tête de réunion */
-#connectionStatus {
-    -fx-background-color: #128c7e;
-    -fx-text-fill: white;
-    -fx-padding: 8px 15px;
+.scroll-bar:vertical .increment-button, .scroll-bar:vertical .decrement-button {
+    -fx-padding: 0; /* Remove arrows */
+    -fx-pref-height: 0;
+}
+
+
+/* Message Bubbles and Related Styles */
+.message-container { /* HBox or VBox wrapper for a single message bubble + sender/time */
+    /* -fx-alignment: center-left; Default, overridden by sent messages via their parent HBox */
+    -fx-max-width: 80%; /* Max width of a message bubble container */
+    -fx-padding: 2px 0; /* Small vertical padding between messages */
+    /* Note: Margins for sent/received are often handled by the parent HBox alignment in Java code */
+}
+
+/* Base style for all message bubbles (the visible colored part) */
+.message-bubble-base {
+    -fx-padding: 8px 12px;
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.13), 1, 0.3, 0, 1);
     -fx-font-size: 14px;
+    -fx-text-fill: #000000; /* Default text fill, can be specified per bubble type if needed */
+    -fx-wrap-text: true;
+    -fx-background-insets: 0;
+}
+
+.message-bubble-received .label-content { /* The Label containing the message text */
+    /* .message-bubble-base should be applied to the Label in Java code */
+    -fx-background-color: #ffffff; /* White for received messages */
+    -fx-background-radius: 18px 18px 18px 5px; /* Pointy corner for received, less rounded on one side */
+    -fx-border-radius: 18px 18px 18px 5px; /* Ensure border matches background radius */
+}
+/* The HBox containing a received message bubble should align left */
+.message-container-received {
+    -fx-alignment: center-left;
+}
+
+
+.message-bubble-sent .label-content { /* The Label containing the message text */
+    /* .message-bubble-base should be applied to the Label in Java code */
+    -fx-background-color: #dcf8c6; /* WhatsApp sent green */
+    -fx-background-radius: 18px 18px 5px 18px; /* Pointy corner for sent */
+    -fx-border-radius: 18px 18px 5px 18px; /* Ensure border matches background radius */
+}
+/* The HBox containing a sent message bubble should align right */
+.message-container-sent {
+    -fx-alignment: center-right;
+}
+
+.message-bubble-admin .label-content {
+    /* Extends .message-bubble-base */
+    -fx-background-color: #ffeb3b; /* Yellow for admin */
+    -fx-background-radius: 18px 18px 5px 18px; /* Consistent with sent for example */
+    -fx-border-radius: 18px 18px 5px 18px;
+}
+.message-container-admin { /* Optional: if admin messages need specific alignment */
+    -fx-alignment: center-left; /* Or center, depending on design */
+}
+
+
+.message-bubble-moderator .label-content {
+    /* Extends .message-bubble-base */
+    -fx-background-color: #e1f5fe; /* Bleu clair pour modérateur */
+    -fx-background-radius: 18px 18px 5px 18px; /* Consistent with sent for example */
+    -fx-border-radius: 18px 18px 5px 18px;
+}
+.message-container-moderator { /* Optional: if moderator messages need specific alignment */
+    -fx-alignment: center-left;
+}
+
+
+.message-sender { /* Label for sender name, typically above the bubble */
+    -fx-font-size: 12px;
     -fx-font-weight: bold;
+    -fx-text-fill: #128c7e; /* WhatsApp accent color, or other distinct colors */
+    -fx-padding: 0 0 2px 8px; /* Padding for sender name */
 }
 
-#connectionStatus.connected {
-    -fx-text-fill: white;
-    -fx-background-color: #128c7e;
+.message-time { /* Label for message timestamp, typically below or beside the bubble */
+    -fx-font-size: 11px;
+    -fx-text-fill: #667781; /* Grey for time */
+    -fx-padding: 2px 8px 0 0; /* Padding for time */
+    /* Alignment of time (e.g., bottom-right of bubble) is handled by its container in Java/FXML */
 }
 
-#connectionStatus.disconnected {
-    -fx-text-fill: white;
-    -fx-background-color: #dc3545;
-}
-
-/* Zone d'invitation */
-.invitation-area {
-    -fx-background-color: #fff3cd;
-    -fx-border-color: #ffeaa7;
+/* System Messages (User joined/left, etc.) */
+.system-message { /* Label or HBox styled as a system message */
+    -fx-background-color: #fff2cc; /* Light yellow, less intrusive */
+    -fx-background-radius: 15px;
+    -fx-border-radius: 15px;
+    -fx-padding: 6px 10px;
+    -fx-font-size: 12px;
+    -fx-text-fill: #8b7355; /* Darker yellow/brown text */
+    -fx-font-style: italic;
+    -fx-alignment: center; /* Center align system messages if it's an HBox */
+    /* -fx-max-width: 250px; Set in Java/FXML if needed, or use Region properties */
+    -fx-border-color: #f0e68c; /* Light border */
     -fx-border-width: 1px;
-    -fx-border-radius: 8px;
-    -fx-background-radius: 8px;
-    -fx-padding: 10px 15px;
-    -fx-spacing: 10px;
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.1), 1, 0.2, 0, 0.5);
+    -fx-hgrow: never; /* Prevent stretching if in an HBox meant for centering */
+}
+/* HBox container for system messages to center them */
+.system-message-container {
+    -fx-alignment: center;
+    -fx-padding: 5px 0;
+}
+
+
+/* Input Area (HBox for text field and send button) */
+#inputArea {
+    -fx-background-color: #f0f0f0; /* WhatsApp input area background */
+    -fx-padding: 15px 20px; /* Padding around input field and button */
+    -fx-spacing: 12px; /* Spacing between input field and button */
+    -fx-alignment: center-left;
+    -fx-border-color: #d1d7db; /* Top border */
+    -fx-border-width: 1px 0 0 0; /* Top border only */
+}
+
+/* Message Input TextField */
+#messageInput {
+    /* .styled-text-field is applied by FXML, WhatsApp overrides below */
+    -fx-background-color: #ffffff;
+    -fx-border-color: #d1d7db; /* Softer border */
+    -fx-border-width: 1px;
+    -fx-border-radius: 22px; /* Slightly less than full round for a common WhatsApp look */
+    -fx-background-radius: 22px;
+    -fx-padding: 8px 18px; /* Adjusted padding */
+    -fx-font-size: 14px;
+    -fx-prompt-text-fill: #9ca3af; /* Grey prompt text */
+    -fx-min-height: 44px; /* Adjusted height to match typical WhatsApp input */
+    -fx-pref-height: 44px;
+    /* -fx-max-width from .styled-text-field might be too restrictive here,
+       HBox.hgrow="ALWAYS" on this element in FXML is typical for text input */
+}
+
+#messageInput:focused {
+    -fx-border-color: #128c7e; /* WhatsApp green focus border */
+    -fx-background-color: #ffffff;
+    -fx-effect: dropshadow(gaussian, rgba(18, 140, 126, 0.25), 5, 0.1, 0, 0); /* Softer focus glow */
+}
+
+/* Send Button */
+#sendButton {
+    /* .button-base and .primary-button might be applied by FXML, WhatsApp overrides: */
+    -fx-background-color: #128c7e; /* WhatsApp green */
+    -fx-text-fill: white;
+    -fx-border-radius: 50%; /* Circular button */
+    -fx-background-radius: 50%;
+    -fx-min-width: 44px; /* Match adjusted height of messageInput */
+    -fx-pref-width: 44px;
+    -fx-min-height: 44px;
+    -fx-pref-height: 44px;
+    -fx-font-size: 18px; /* Icon size if using font icon, or just for text */
+    -fx-font-weight: bold; /* If text, not icon */
+    -fx-padding: 0; /* No padding for icon button */
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.15), 3, 0.2, 0, 1); /* Subtle shadow */
+}
+
+#sendButton:hover {
+    -fx-background-color: #0f7a6b; /* Darker green on hover */
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.25), 5, 0.3, 0, 1.2);
+}
+
+#sendButton:pressed {
+    -fx-background-color: #0d6b5d; /* Even darker on press */
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.1), 2, 0.1, 0, 0.5);
+}
+
+/* Invitation Area (for organizers) */
+.invitation-area { /* Typically a VBox or HBox */
+    -fx-background-color: #f7f7f7; /* Lighter, less intrusive background */
+    -fx-border-color: #e0e0e0; /* Softer border */
+    -fx-border-width: 1px 0 1px 0; /* Top and bottom borders */
+    -fx-padding: 10px 15px; /* Reduced padding */
+    -fx-spacing: 10px; /* Spacing for elements within invitation area */
 }
 
 .invite-button {
-    -fx-background-color: #17a2b8;
+    /* .button-base might be applied by FXML, WhatsApp-theme overrides: */
+    -fx-background-color: #075e54; /* Darker WhatsApp green for this specific action button */
     -fx-text-fill: white;
-    -fx-border-radius: 20px;
-    -fx-background-radius: 20px;
-    -fx-padding: 8px 15px;
+    -fx-font-weight: bold;
+    -fx-border-radius: 18px; /* Consistent rounding */
+    -fx-background-radius: 18px;
+    -fx-padding: 6px 12px; /* Adjusted padding */
     -fx-font-size: 12px;
-    -fx-min-width: 80px;
+    -fx-min-width: 70px; /* Adjusted min-width */
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.1), 2, 0.1, 0, 0.5);
 }
 
 .invite-button:hover {
-    -fx-background-color: #138496;
-    -fx-cursor: hand;
+    -fx-background-color: #054c42; /* Darker on hover */
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.15), 4, 0.2, 0, 1);
+}
+
+.invite-button:pressed {
+    -fx-background-color: #043b33; /* Even darker on press */
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.05), 1, 0.05, 0, 0.2);
 }
 
 .invite-user-field {
+    /* .styled-text-field is applied by FXML, WhatsApp-theme overrides: */
     -fx-background-color: white;
-    -fx-border-color: #17a2b8;
-    -fx-border-radius: 15px;
-    -fx-background-radius: 15px;
+    -fx-border-color: #ced4da; /* Standard input border */
+    -fx-border-radius: 18px; /* Consistent rounding */
+    -fx-background-radius: 18px;
     -fx-padding: 6px 12px;
-    -fx-font-size: 12px;
+    -fx-font-size: 13px;
+    -fx-prompt-text-fill: #adb5bd; /* Lighter prompt text */
 }
 
-/* Conteneur principal de la réunion */
-.reunion-container {
-    -fx-background-color: #ffffff;
-    -fx-spacing: 0;
-    -fx-padding: 0;
+.invite-user-field:focused {
+    -fx-border-color: #075e54; /* Focus color matching button */
+    -fx-effect: dropshadow(gaussian, rgba(7, 94, 84, 0.25), 5, 0.1, 0, 0);
 }
 
-/* Animation pour nouveaux messages */
+/* Animation for new messages */
 @keyframes fadeInUp {
     from {
         -fx-opacity: 0;
@@ -685,297 +703,12 @@ Button:pressed {
     }
 }
 
-.new-message-animation {
-    -fx-opacity: 0;
-    -fx-translate-y: 20px;
+.new-message-animation { /* Apply to the root of the new message HBox/VBox */
+    -fx-animation: fadeInUp 0.3s ease-out;
 }
 
-/* Styles pour différents types d'utilisateurs */
-.message-bubble-admin {
-    -fx-background-color: #ffeb3b; /* Jaune pour admin */
-    -fx-background-radius: 18px 18px 5px 18px;
-    -fx-border-radius: 18px 18px 5px 18px;
-    -fx-padding: 8px 12px;
-    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.13), 1, 0.3, 0, 1);
-    -fx-font-size: 14px;
-    -fx-text-fill: #000000;
-    -fx-wrap-text: true;
-}
+/* End of Screen: Reunion (reunion.fxml) - WhatsApp Theme */
 
-.message-bubble-moderator {
-    -fx-background-color: #e1f5fe; /* Bleu clair pour modérateur */
-    -fx-background-radius: 18px 18px 5px 18px;
-    -fx-border-radius: 18px 18px 5px 18px;
-    -fx-padding: 8px 12px;
-    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.13), 1, 0.3, 0, 1);
-    -fx-font-size: 14px;
-    -fx-text-fill: #000000;
-    -fx-wrap-text: true;
-}
-
-/* === Styles spécifiques pour les messages de réunion - Style WhatsApp === */
-
-/* Zone de messages principale */
-#messageArea {
-    -fx-background-color: #e5ddd5; /* Couleur de fond WhatsApp */
-    -fx-padding: 10px;
-    -fx-spacing: 8px;
-    -fx-border-radius: 0;
-    -fx-background-radius: 0;
-}
-
-/* Conteneur de message individuel */
-.message-container {
-    -fx-alignment: center-left;
-    -fx-max-width: 80%;
-    -fx-padding: 0;
-}
-
-/* Messages reçus (autres utilisateurs) */
-.message-bubble-received {
-    -fx-background-color: #ffffff;
-    -fx-background-radius: 18px 18px 18px 5px;
-    -fx-border-radius: 18px 18px 18px 5px;
-    -fx-padding: 8px 12px;
-    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.13), 1, 0.3, 0, 1);
-    -fx-font-size: 14px;
-    -fx-text-fill: #000000;
-    -fx-wrap-text: true;
-    -fx-alignment: center-left;
-    -fx-margin: 0 50px 0 0; /* Marge à droite pour différencier */
-}
-
-/* Messages envoyés (utilisateur actuel) */
-.message-bubble-sent {
-    -fx-background-color: #dcf8c6; /* Vert WhatsApp */
-    -fx-background-radius: 18px 18px 5px 18px;
-    -fx-border-radius: 18px 18px 5px 18px;
-    -fx-padding: 8px 12px;
-    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.13), 1, 0.3, 0, 1);
-    -fx-font-size: 14px;
-    -fx-text-fill: #000000;
-    -fx-wrap-text: true;
-    -fx-alignment: center-right;
-    -fx-margin: 0 0 0 50px; /* Marge à gauche pour différencier */
-}
-
-/* Nom de l'expéditeur */
-.message-sender {
-    -fx-font-size: 12px;
-    -fx-font-weight: bold;
-    -fx-text-fill: #128c7e; /* Couleur WhatsApp */
-    -fx-padding: 0 0 2px 0;
-}
-
-/* Heure du message */
-.message-time {
-    -fx-font-size: 11px;
-    -fx-text-fill: #667781;
-    -fx-padding: 2px 0 0 0;
-    -fx-alignment: bottom-right;
-}
-
-/* Messages système */
-.system-message {
-    -fx-background-color: #fff2cc;
-    -fx-background-radius: 15px;
-    -fx-border-radius: 15px;
-    -fx-padding: 6px 10px;
-    -fx-font-size: 12px;
-    -fx-text-fill: #8b7355;
-    -fx-font-style: italic;
-    -fx-alignment: center;
-    -fx-max-width: 250px;
-    -fx-border-color: #f0e68c;
-    -fx-border-width: 1px;
-    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.1), 1, 0.2, 0, 0.5);
-}
-
-/* Statut de connexion - état connecté */
-.connectionStatus.connected {
-    -fx-text-fill: white;
-    -fx-background-color: #128c7e; /* Vert WhatsApp */
-    -fx-font-weight: bold;
-    -fx-font-size: 14px;
-}
-
-/* Statut de connexion - état déconnecté */
-.connectionStatus.disconnected {
-    -fx-text-fill: white;
-    -fx-background-color: #dc3545;
-    -fx-font-weight: bold;
-    -fx-font-size: 14px;
-}
-
-/* Zone d'invitation pour organisateurs */
-.invitation-area {
-    -fx-background-color: #fff3cd;
-    -fx-border-color: #ffeaa7;
-    -fx-border-width: 1px 0 1px 0; /* Bordures horizontales seulement */
-    -fx-padding: 15px;
-}
-
-/* Bouton d'invitation spécifique */
-.invite-button {
-    -fx-background-color: #17a2b8;
-    -fx-text-fill: white;
-    -fx-font-weight: bold;
-    -fx-border-radius: 20px;
-    -fx-background-radius: 20px;
-    -fx-padding: 8px 15px;
-    -fx-font-size: 12px;
-    -fx-min-width: 80px;
-    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.1), 3, 0.2, 0, 1);
-}
-
-.invite-button:hover {
-    -fx-background-color: #138496;
-    -fx-cursor: hand;
-    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.2), 5, 0.3, 0, 1.5);
-}
-
-.invite-button:pressed {
-    -fx-background-color: #0e6674;
-    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.05), 2, 0.1, 0, 0.5);
-}
-
-/* Champ de saisie d'invitation */
-.invite-user-field {
-    -fx-background-color: white;
-    -fx-border-color: #17a2b8;
-    -fx-border-radius: 15px;
-    -fx-background-radius: 15px;
-    -fx-padding: 6px 12px;
-    -fx-font-size: 13px;
-    -fx-prompt-text-fill: #17a2b8;
-}
-
-.invite-user-field:focused {
-    -fx-border-color: #138496;
-    -fx-effect: dropshadow(gaussian, rgba(23, 162, 184, 0.3), 6, 0.15, 0, 0);
-}
-
-/* Zone de saisie de message style WhatsApp */
-#messageInput {
-    -fx-background-color: #ffffff;
-    -fx-border-color: #d1d7db;
-    -fx-border-width: 1px;
-    -fx-border-radius: 25px;
-    -fx-background-radius: 25px;
-    -fx-padding: 10px 20px;
-    -fx-font-size: 14px;
-    -fx-prompt-text-fill: #9ca3af;
-    -fx-min-height: 40px;
-    -fx-pref-height: 40px;
-}
-
-#messageInput:focused {
-    -fx-border-color: #128c7e;
-    -fx-background-color: #ffffff;
-    -fx-effect: dropshadow(gaussian, rgba(18, 140, 126, 0.3), 6, 0.15, 0, 0);
-}
-
-/* Bouton d'envoi style WhatsApp */
-#sendButton {
-    -fx-background-color: #128c7e; /* Vert WhatsApp */
-    -fx-text-fill: white;
-    -fx-border-radius: 50%;
-    -fx-background-radius: 50%;
-    -fx-min-width: 50px;
-    -fx-pref-width: 50px;
-    -fx-min-height: 50px;
-    -fx-pref-height: 50px;
-    -fx-font-size: 18px;
-    -fx-font-weight: bold;
-    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.2), 4, 0.3, 0, 1);
-}
-
-#sendButton:hover {
-    -fx-background-color: #0f7a6b;
-    -fx-cursor: hand;
-    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.3), 6, 0.4, 0, 1.5);
-}
-
-#sendButton:pressed {
-    -fx-background-color: #0d6b5d;
-    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.15), 2, 0.2, 0, 0.5);
-}
-
-/* Zone d'input (HBox conteneur) */
-#inputArea {
-    -fx-background-color: #f0f0f0;
-    -fx-padding: 15px 20px;
-    -fx-spacing: 12px;
-    -fx-alignment: center-left;
-    -fx-border-color: #d1d7db;
-    -fx-border-width: 1px 0 0 0; /* Bordure uniquement en haut */
-}
-
-/* ScrollPane pour les messages */
-.scroll-pane {
-    -fx-background-color: #e5ddd5;
-    -fx-border-color: transparent;
-}
-
-.scroll-pane .viewport {
-    -fx-background-color: #e5ddd5;
-}
-
-.scroll-pane .content {
-    -fx-background-color: #e5ddd5;
-}
-
-/* Barre de scroll style moderne */
-.scroll-bar:vertical {
-    -fx-background-color: transparent;
-    -fx-border-color: transparent;
-    -fx-background-radius: 0;
-    -fx-border-radius: 0;
-    -fx-pref-width: 8px;
-}
-
-.scroll-bar:vertical .track {
-    -fx-background-color: rgba(0,0,0,0.1);
-    -fx-background-radius: 4px;
-    -fx-border-color: transparent;
-}
-
-.scroll-bar:vertical .thumb {
-    -fx-background-color: rgba(0,0,0,0.3);
-    -fx-background-radius: 4px;
-    -fx-border-color: transparent;
-}
-
-.scroll-bar:vertical .thumb:hover {
-    -fx-background-color: rgba(0,0,0,0.5);
-}
-
-/* Conteneur principal de la réunion */
-.reunion-container {
-    -fx-background-color: #ffffff;
-    -fx-spacing: 0;
-    -fx-padding: 0;
-}
-
-/* Styles pour messages d'admin/modérateur */
-.message-bubble-admin {
-    -fx-background-color: #ffeb3b; /* Jaune pour admin */
-    -fx-background-radius: 18px 18px 5px 18px;
-    -fx-border-radius: 18px 18px 5px 18px;
-    -fx-padding: 8px 12px;
-    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.13), 1, 0.3, 0, 1);
-    -fx-font-size: 14px;
-    -fx-text-fill: #000000;
-    -fx-wrap-text: true;
-}
-
-.message-bubble-moderator {
-    -fx-background-color: #e1f5fe; /* Bleu clair pour modérateur */
-    -fx-background-radius: 18px 18px 5px 18px;
-    -fx-border-radius: 18px 18px 5px 18px;
-    -fx-padding: 8px 12px;
-    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.13), 1, 0.3, 0, 1);
-    -fx-font-size: 14px;
-    -fx-text-fill: #000000;
-    -fx-wrap-text: true;
-}
+/* All prior duplicated WhatsApp styles have been removed and consolidated above. */
+/* Styles for admin/moderator messages are part of the main WhatsApp theme section using:
+   .message-bubble-admin .label-content, .message-container-admin (and similar for moderator). */

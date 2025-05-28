@@ -22,8 +22,8 @@ public class ReunionService implements WebSocketAction {
         String action = data.optString("action");
         String reponse = null;
 
-        System.out.println("ReunionService - Action reçue: " + action);
-        System.out.println("ReunionService - Données reçues: " + data.toString());
+        // System.out.println("DEBUG: ReunionService - Action reçue: " + action);
+        // System.out.println("DEBUG: ReunionService - Données reçues: " + data.toString());
 
         switch (action) {
             case "creation":
@@ -55,7 +55,12 @@ public class ReunionService implements WebSocketAction {
     }
 
     /**
-     * CORRECTION: Crée une réunion et ajoute automatiquement l'organisateur comme participant
+     * Crée une nouvelle réunion, enregistre l'organisateur comme participant,
+     * et retourne les détails de la réunion créée.
+     *
+     * @param data    Les données JSON contenant les informations de la réunion.
+     * @param session La session WebSocket de l'utilisateur créant la réunion.
+     * @return Une chaîne JSON représentant la réponse.
      */
     private String creerReunion(JSONObject data, Session session) {
         JSONObject reponseJson = new JSONObject();
@@ -89,21 +94,21 @@ public class ReunionService implements WebSocketAction {
                     nom, sujet, agenda, debut, duree, type, idOrganisateur, null
             );
 
-            // NOUVEAU: Ajouter automatiquement l'organisateur comme participant
+            // Ajouter automatiquement l'organisateur comme participant
             try (Connection conn = Database.getConnection()) {
                 String insertParticipationSql = "INSERT INTO participation (personne_id, reunion_id) VALUES (?, ?)";
                 try (PreparedStatement pstmt = conn.prepareStatement(insertParticipationSql)) {
                     pstmt.setInt(1, idOrganisateur);
                     pstmt.setInt(2, nouvelleReunion.getId());
                     pstmt.executeUpdate();
-                    System.out.println("Organisateur ajouté comme participant à la réunion ID: " + nouvelleReunion.getId());
+                    System.out.println("INFO: Organisateur (ID: " + idOrganisateur + ") ajouté comme participant à la réunion (ID: " + nouvelleReunion.getId() + ")");
                 }
             }
 
             reponseJson.put("statut", "succes");
             reponseJson.put("message", "Réunion créée avec succès");
 
-            // NOUVEAU: Inclure l'ID de la réunion pour redirection automatique
+            // Inclure les détails de la réunion dans la réponse pour une redirection/mise à jour côté client
             JSONObject reunionData = new JSONObject();
             reunionData.put("id", nouvelleReunion.getId());
             reunionData.put("nom", nouvelleReunion.getNom());
@@ -133,17 +138,25 @@ public class ReunionService implements WebSocketAction {
     }
 
     /**
-     * CORRECTION: Amélioration de la fonction d'envoi de message avec validation FK
+     * Gère l'envoi d'un message dans une réunion.
+     * Valide l'expéditeur et la réunion, sauvegarde le message en base de données,
+     * et le diffuse aux participants de la réunion.
+     *
+     * @param data           Les données JSON contenant les détails du message.
+     * @param currentSession La session WebSocket de l'expéditeur.
+     * @throws IOException Si une erreur de communication se produit.
      */
     private void envoyerMessage(JSONObject data, Session currentSession) throws IOException {
         String reunionId = data.optString("reunionId");
         String userIdStr = data.optString("userId");
         String contenu = data.optString("contenu");
 
-        System.out.println("Tentative d'envoi de message - ReunionID: " + reunionId + ", UserID: " + userIdStr + ", Contenu: " + contenu);
+        // System.out.println("DEBUG: Tentative d'envoi de message - ReunionID: " + reunionId + ", UserID: " + userIdStr + ", Contenu: " + (contenu != null ? contenu.substring(0, Math.min(contenu.length(), 20)) + "..." : "null"));
 
         if (reunionId.isEmpty() || userIdStr.isEmpty() || contenu.isEmpty()) {
             JSONObject errorResponse = new JSONObject();
+            errorResponse.put("type", "error"); // Assurer que le type est "error" pour le client ReunionController
+            errorResponse.put("originalAction", "envoyerMessage"); // Pour contexte client
             errorResponse.put("type", "error");
             errorResponse.put("message", "ID de réunion, ID utilisateur et contenu requis.");
             currentSession.getBasicRemote().sendText(errorResponse.toString());
@@ -166,10 +179,9 @@ public class ReunionService implements WebSocketAction {
         String senderName = "Inconnu";
 
         try (Connection conn = Database.getConnection()) {
-            // CORRECTION: Vérifier d'abord que l'utilisateur existe
+            // Vérifier que l'utilisateur existe et récupérer son nom complet
             String checkUserSql = "SELECT CONCAT(nom, ' ', prenom) as nom_complet FROM personne WHERE id = ?";
             boolean userExists = false;
-
             try (PreparedStatement checkStmt = conn.prepareStatement(checkUserSql)) {
                 checkStmt.setInt(1, userId);
                 ResultSet rs = checkStmt.executeQuery();
@@ -177,44 +189,42 @@ public class ReunionService implements WebSocketAction {
                     senderName = rs.getString("nom_complet");
                     userExists = true;
                 } else {
-                    System.err.println("Utilisateur avec ID " + userId + " n'existe pas dans la base de données");
+                    System.err.println("ERREUR: Utilisateur (ID: " + userId + ") non trouvé lors de l'envoi du message.");
                 }
             }
-
             if (!userExists) {
                 JSONObject errorResponse = new JSONObject();
-                errorResponse.put("type", "error");
-                errorResponse.put("message", "Utilisateur non trouvé.");
+                errorResponse.put("type", "errorReunion"); // Erreur spécifique à la réunion
+                errorResponse.put("originalAction", "envoyerMessage");
+                errorResponse.put("message", "Utilisateur non trouvé. Impossible d'envoyer le message.");
                 currentSession.getBasicRemote().sendText(errorResponse.toString());
                 return;
             }
 
-            // CORRECTION: Vérifier que la réunion existe
+            // Vérifier que la réunion existe
             String checkReunionSql = "SELECT COUNT(*) FROM reunion WHERE id = ?";
             boolean reunionExists = false;
-
             try (PreparedStatement checkStmt = conn.prepareStatement(checkReunionSql)) {
                 checkStmt.setInt(1, reunionIdInt);
                 ResultSet rs = checkStmt.executeQuery();
                 if (rs.next() && rs.getInt(1) > 0) {
                     reunionExists = true;
                 } else {
-                    System.err.println("Réunion avec ID " + reunionIdInt + " n'existe pas");
+                    System.err.println("ERREUR: Réunion (ID: " + reunionIdInt + ") non trouvée lors de l'envoi du message.");
                 }
             }
-
             if (!reunionExists) {
                 JSONObject errorResponse = new JSONObject();
-                errorResponse.put("type", "error");
-                errorResponse.put("message", "Réunion non trouvée.");
+                errorResponse.put("type", "errorReunion");
+                errorResponse.put("originalAction", "envoyerMessage");
+                errorResponse.put("message", "Réunion non trouvée. Impossible d'envoyer le message.");
                 currentSession.getBasicRemote().sendText(errorResponse.toString());
                 return;
             }
 
-            // CORRECTION: Vérifier que l'utilisateur participe à la réunion
+            // Vérifier que l'utilisateur participe à la réunion
             String checkParticipationSql = "SELECT COUNT(*) FROM participation WHERE personne_id = ? AND reunion_id = ?";
             boolean isParticipant = false;
-
             try (PreparedStatement checkStmt = conn.prepareStatement(checkParticipationSql)) {
                 checkStmt.setInt(1, userId);
                 checkStmt.setInt(2, reunionIdInt);
@@ -223,16 +233,16 @@ public class ReunionService implements WebSocketAction {
                     isParticipant = true;
                 }
             }
-
             if (!isParticipant) {
                 JSONObject errorResponse = new JSONObject();
-                errorResponse.put("type", "error");
-                errorResponse.put("message", "Vous ne participez pas à cette réunion.");
+                errorResponse.put("type", "errorReunion");
+                errorResponse.put("originalAction", "envoyerMessage");
+                errorResponse.put("message", "Vous n'êtes pas autorisé à envoyer des messages dans cette réunion.");
                 currentSession.getBasicRemote().sendText(errorResponse.toString());
                 return;
             }
 
-            // Maintenant on peut sauvegarder le message en toute sécurité
+            // Sauvegarder le message
             String sqlInsert = "INSERT INTO message (personne_id, reunion_id, contenu, heure_envoi) VALUES (?, ?, ?, NOW())";
             try (PreparedStatement pstmtInsert = conn.prepareStatement(sqlInsert)) {
                 pstmtInsert.setInt(1, userId);
@@ -241,47 +251,49 @@ public class ReunionService implements WebSocketAction {
                 int rowsAffected = pstmtInsert.executeUpdate();
 
                 if (rowsAffected > 0) {
-                    System.out.println("Message sauvegardé avec succès pour l'utilisateur " + userId + " dans la réunion " + reunionIdInt);
+                    System.out.println("INFO: Message sauvegardé pour utilisateur ID: " + userId + " dans réunion ID: " + reunionIdInt);
                 } else {
-                    System.err.println("Aucune ligne affectée lors de l'insertion du message");
+                    System.err.println("ERREUR: Échec de la sauvegarde du message, aucune ligne affectée.");
+                    // Envoyer une erreur au client si la sauvegarde échoue est une option ici.
                 }
             }
 
         } catch (SQLException e) {
-            System.err.println("Erreur SQL lors de l'envoi du message: " + e.getMessage());
+            System.err.println("ERREUR SQL lors de l'envoi du message: " + e.getMessage());
             e.printStackTrace();
             JSONObject errorResponse = new JSONObject();
-            errorResponse.put("type", "error");
-            errorResponse.put("message", "Erreur serveur lors de la sauvegarde du message.");
+            errorResponse.put("type", "errorReunion");
+            errorResponse.put("originalAction", "envoyerMessage");
+            errorResponse.put("message", "Erreur du serveur lors de la sauvegarde du message. Veuillez réessayer.");
             currentSession.getBasicRemote().sendText(errorResponse.toString());
             return;
         }
 
-        // Diffuser le message à toutes les sessions de la même réunion
+        // Préparer et diffuser le message
         JSONObject broadcastJson = new JSONObject();
         broadcastJson.put("type", "newMessage");
-        broadcastJson.put("reunionId", reunionId);
+        broadcastJson.put("reunionId", reunionId); // Garder l'ID de réunion sous forme de chaîne pour la cohérence JSON
         broadcastJson.put("sender", senderName);
         broadcastJson.put("content", contenu);
-        broadcastJson.put("userId", userIdStr);
-        broadcastJson.put("timestamp", System.currentTimeMillis()); // NOUVEAU: Timestamp pour l'affichage
+        broadcastJson.put("userId", userIdStr); // Garder l'ID utilisateur sous forme de chaîne
+        broadcastJson.put("timestamp", System.currentTimeMillis()); // Timestamp pour l'affichage côté client
 
         Set<Session> allSessions = ServeurWebSocket.getSessions();
-        int messagesSent = 0;
+        int messagesSentCount = 0;
         for (Session s : allSessions) {
             if (s.isOpen()) {
                 String sessionReunionId = (String) s.getUserProperties().get("reunionId");
-                if (reunionId.equals(sessionReunionId)) {
+                if (reunionId.equals(sessionReunionId)) { // Diffuser uniquement aux sessions de la même réunion
                     try {
                         s.getBasicRemote().sendText(broadcastJson.toString());
-                        messagesSent++;
+                        messagesSentCount++;
                     } catch (IOException e) {
-                        System.err.println("Erreur lors de la diffusion du message à la session " + s.getId() + ": " + e.getMessage());
+                        System.err.println("ERREUR: Échec de la diffusion du message à la session " + s.getId() + ": " + e.getMessage());
                     }
                 }
             }
         }
-        System.out.println("Message diffusé à " + messagesSent + " sessions");
+        System.out.println("INFO: Message diffusé à " + messagesSentCount + " participant(s) de la réunion ID: " + reunionId);
     }
 
     /**

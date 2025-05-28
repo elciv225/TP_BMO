@@ -113,7 +113,10 @@ public class EspaceUtilisateurController {
     }
 
     /**
-     * CORRECTION: Dialogue de création de réunion entièrement revu
+     * Affiche une boîte de dialogue permettant à l'utilisateur de saisir les détails pour une nouvelle réunion.
+     * Valide les entrées et retourne un objet Reunion si la validation réussit.
+     *
+     * @return Un objet Dialog configuré pour la création de réunion.
      */
     private Dialog<Reunion> createReunionDialog() {
         Dialog<Reunion> dialog = new Dialog<>();
@@ -181,7 +184,7 @@ public class EspaceUtilisateurController {
         ButtonType annulerButtonType = new ButtonType("Annuler", ButtonBar.ButtonData.CANCEL_CLOSE);
         dialog.getDialogPane().getButtonTypes().addAll(creerButtonType, annulerButtonType);
 
-        // CORRECTION: Validation et création de l'objet Reunion
+        // Validation et création de l'objet Reunion lors du clic sur "Créer"
         dialog.setResultConverter(dialogButton -> {
             if (dialogButton == creerButtonType) {
                 try {
@@ -233,7 +236,7 @@ public class EspaceUtilisateurController {
                         return null;
                     }
 
-                    // CORRECTION: Créer l'objet Reunion correctement
+                    // Créer l'objet Reunion avec les données validées
                     return new Reunion(
                             nom.trim(),
                             sujet != null ? sujet.trim() : "",
@@ -270,7 +273,10 @@ public class EspaceUtilisateurController {
     }
 
     /**
-     * CORRECTION: JSON pour création de réunion
+     * Construit un objet JSON pour la requête de création de réunion.
+     *
+     * @param reunion L'objet Reunion contenant les détails.
+     * @return Une chaîne de caractères représentant l'objet JSON.
      */
     private String creerJsonCreationReunion(Reunion reunion) {
         JSONObject json = new JSONObject();
@@ -309,11 +315,14 @@ public class EspaceUtilisateurController {
     }
 
     /**
-     * CORRECTION: Traitement des réponses amélioré
+     * Traite les réponses génériques du serveur WebSocket qui ne sont pas gérées
+     * par des contrôleurs plus spécifiques (comme AuthentificationController ou ReunionController).
+     *
+     * @param message Le message JSON brut reçu du serveur.
      */
     public void traiterReponseConnexion(String message) {
         if (message == null || message.trim().isEmpty()) {
-            System.err.println("Erreur: message WebSocket vide reçu.");
+            System.err.println("ERREUR: Message WebSocket vide reçu dans EspaceUtilisateurController.");
             return;
         }
 
@@ -357,10 +366,16 @@ public class EspaceUtilisateurController {
     }
 
     /**
-     * CORRECTION: Gestion spécifique des réponses de réunion avec redirection auto
+     * Gère les réponses spécifiques aux actions sur les réunions (création, rejoindre).
+     * Peut initier une redirection vers l'interface de réunion en cas de succès.
+     *
+     * @param action       L'action spécifique de la réponse (ex: "reponseCreation", "reponseRejoindre").
+     * @param statut       Le statut de la réponse ("succes" ou "echec").
+     * @param message      Le message d'information ou d'erreur du serveur.
+     * @param jsonResponse L'objet JSON complet de la réponse.
      */
     private void handleReunionResponse(String action, String statut, String message, JSONObject jsonResponse) {
-        System.out.println("Réponse réunion reçue - Action: " + action + ", Statut: " + statut);
+        System.out.println("INFO: Réponse du serveur concernant une réunion - Action: " + action + ", Statut: " + statut);
 
         switch (action) {
             case "reponseCreation":
@@ -370,10 +385,10 @@ public class EspaceUtilisateurController {
                         int reunionId = reunionData.optInt("id");
                         boolean autoJoin = jsonResponse.optBoolean("autoJoin", false);
 
-                        System.out.println("Réunion créée avec ID: " + reunionId);
+                        System.out.println("INFO: Réunion créée avec ID: " + reunionId);
 
                         if (autoJoin && reunionId > 0) {
-                            // NOUVEAU: Redirection automatique vers l'interface de réunion
+                            // Redirection automatique vers l'interface de réunion
                             Platform.runLater(() -> {
                                 ouvrirInterfaceReunion(String.valueOf(reunionId), true);
                             });
@@ -414,7 +429,11 @@ public class EspaceUtilisateurController {
     }
 
     /**
-     * NOUVEAU: Ouvre l'interface de réunion avec gestion améliorée
+     * Ouvre l'interface de la réunion (reunion.fxml) dans une nouvelle fenêtre.
+     * Initialise le ReunionController avec les données nécessaires.
+     *
+     * @param reunionId L'ID de la réunion à ouvrir.
+     * @param isCreator Booléen indiquant si l'utilisateur actuel est le créateur/organisateur.
      */
     private void ouvrirInterfaceReunion(String reunionId, boolean isCreator) {
         try {
@@ -429,8 +448,13 @@ public class EspaceUtilisateurController {
             // Passer le nom complet de l'utilisateur
             String fullName = (nom != null && prenom != null) ? nom + " " + prenom : "Utilisateur";
 
-            // NOUVEAU: Initialiser avec le nom d'utilisateur
+            // Initialiser le contrôleur de la réunion avec les données nécessaires
             reunionController.initData(reunionId, userId, organizateurId, clientWebSocket, fullName);
+
+            // Informer ClientWebSocket du contrôleur de réunion actif
+            if (this.clientWebSocket != null) {
+                this.clientWebSocket.setReunionController(reunionController);
+            }
 
             Stage stage = new Stage();
             stage.setTitle("Réunion - " + reunionId + (isCreator ? " (Organisateur)" : ""));
@@ -439,6 +463,11 @@ public class EspaceUtilisateurController {
             // Gérer la fermeture proprement
             stage.setOnCloseRequest(event -> {
                 reunionController.cleanup();
+                // Also clear from ClientWebSocket when stage is closed
+                if (this.clientWebSocket != null) {
+                    // Pass 'this' (EspaceUtilisateurController) to restore it as the active controller
+                    this.clientWebSocket.clearReunionController(this);
+                }
             });
 
             stage.show();
@@ -451,8 +480,10 @@ public class EspaceUtilisateurController {
     }
 
     /**
-     * Version compatible avec l'ancienne méthode
+     * Ouvre l'interface de réunion en considérant l'utilisateur comme non-créateur.
+     * @deprecated Utiliser {@link #ouvrirInterfaceReunion(String, boolean)} pour spécifier le statut de créateur.
      */
+    @Deprecated
     private void ouvrirInterfaceReunion(String reunionId) {
         ouvrirInterfaceReunion(reunionId, false);
     }
