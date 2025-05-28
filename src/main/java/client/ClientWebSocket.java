@@ -13,6 +13,8 @@ import java.net.*;
 import java.util.Enumeration;
 import java.util.Timer;
 import java.util.TimerTask;
+import org.json.JSONObject; // Added import
+import org.json.JSONArray; // Added import
 
 @ClientEndpoint
 public class ClientWebSocket {
@@ -68,7 +70,7 @@ public class ClientWebSocket {
     @OnMessage
     public void onMessage(String message) {
         System.out.println("Message reçu du serveur: " + message); // Log received message
-        org.json.JSONObject jsonResponse = new org.json.JSONObject(message);
+        JSONObject jsonResponse = new JSONObject(message); // Use imported JSONObject
         String modele = jsonResponse.optString("modele");
         String action = jsonResponse.optString("actionOriginale", jsonResponse.optString("action")); // Prefer actionOriginale
 
@@ -79,10 +81,10 @@ public class ClientWebSocket {
                 String timestamp = jsonResponse.optString("timestamp", java.time.LocalTime.now().format(java.time.format.DateTimeFormatter.ofPattern("HH:mm:ss")));
                 reunionController.displayChatMessage(auteur, contenu, timestamp);
             } else if ("reponseHistoriqueMessages".equals(action) || "historiqueMessages".equals(action)) { // Match action from setMeetingData
-                org.json.JSONArray messagesArray = jsonResponse.optJSONArray("messages");
+                JSONArray messagesArray = jsonResponse.optJSONArray("messages"); // Use imported JSONArray
                 if (messagesArray != null) {
                     for (int i = 0; i < messagesArray.length(); i++) {
-                        org.json.JSONObject msgJson = messagesArray.getJSONObject(i);
+                        JSONObject msgJson = messagesArray.getJSONObject(i); // Use imported JSONObject
                         String auteur = msgJson.optString("auteur", "Inconnu");
                         String contenu = msgJson.optString("contenu");
                         String timestamp = msgJson.optString("timestamp", java.time.LocalTime.now().format(java.time.format.DateTimeFormatter.ofPattern("HH:mm:ss")));
