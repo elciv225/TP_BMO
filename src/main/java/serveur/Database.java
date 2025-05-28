@@ -9,7 +9,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
 public class Database {
-    private static final String URL = "jdbc:mysql://localhost:3306/tpbmo_db";
+    private static final String URL = "jdbc:mysql://localhost:3307/tpbmo_db"; // Port updated to 3307
     private static final String USER = "tpbmo";
     private static final String PASSWORD = "tpbmo";
 

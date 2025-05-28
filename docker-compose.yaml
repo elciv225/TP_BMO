@@ -8,7 +8,7 @@ services:
       MYSQL_USER: tpbmo
       MYSQL_PASSWORD: tpbmo
     ports:
-      - "3306:3306"
+      - "3307:3306" # Host port changed to 3307, container port remains 3306
     volumes:
       - mysql_data:/var/lib/mysql
       - ./sql:/docker-entrypoint-initdb.d
@@ -19,7 +19,7 @@ services:
       - "8081:80"
     environment:
       PMA_HOST: tpbmo_db
-      PMA_PORT: 3306
+      PMA_PORT: 3306 # phpMyAdmin will connect to the DB on its internal port 3306
       PMA_ARBITRARY: 1
     depends_on:
       - tpbmo_db

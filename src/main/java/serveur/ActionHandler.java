@@ -15,6 +15,7 @@ public class ActionHandler {
     static {
         actions.put("reunion", new ReunionService());
         actions.put("authentification", new AuthentificationService());
+        actions.put("chat", new ChatService()); // Added ChatService
         // Tu peux ajouter d'autres services ici comme:
         // actions.put("utilisateur", new UtilisateurService());
     }

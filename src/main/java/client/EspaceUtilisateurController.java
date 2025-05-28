@@ -34,6 +34,8 @@ public class EspaceUtilisateurController {
     private TextField userInputForInvite;
     @FXML
     private Button inviteUserButton;
+    @FXML
+    private Button enterMeetingButton; // New button
 
     private Reunion currentReunionForDialog;
     private ClientWebSocket clientWebSocket;
@@ -58,6 +60,87 @@ public class EspaceUtilisateurController {
         // Bind the action for btnRejoindre
         if (btnRejoindre != null) {
             btnRejoindre.setOnAction(event -> handleRejoindreReunion());
+        }
+
+        // Disable enterMeetingButton initially if it exists
+        if (enterMeetingButton != null) {
+            enterMeetingButton.setDisable(true);
+            meetingsListView.getSelectionModel().selectedItemProperty().addListener((obs, oldSelection, newSelection) -> {
+                enterMeetingButton.setDisable(newSelection == null);
+            });
+        }
+    }
+
+    private String parseTitleFromString(String meetingInfo) {
+        if (meetingInfo == null) return "Titre Inconnu";
+        String titlePrefix = "Titre: ";
+        int titleStartIndex = meetingInfo.indexOf(titlePrefix);
+        if (titleStartIndex != -1) {
+            titleStartIndex += titlePrefix.length();
+            int titleEndIndex = meetingInfo.indexOf(" (Début:", titleStartIndex);
+            if (titleEndIndex != -1) {
+                return meetingInfo.substring(titleStartIndex, titleEndIndex).trim();
+            } else { // Fallback if (Début: part is missing
+                return meetingInfo.substring(titleStartIndex).trim();
+            }
+        }
+        // Fallback if "Titre: " prefix is missing, try to get content after "ID: xxx - "
+        String idPrefix = "ID: ";
+        int idEndIndex = meetingInfo.indexOf(" - ");
+        if (idEndIndex != -1 && meetingInfo.startsWith(idPrefix)) {
+             String potentialTitle = meetingInfo.substring(idEndIndex + 3).trim();
+             int debutIndex = potentialTitle.indexOf(" (Début:");
+             if (debutIndex != -1) {
+                 return potentialTitle.substring(0, debutIndex).trim();
+             }
+             return potentialTitle;
+        }
+        return "Titre Inconnu"; // Default if parsing fails
+    }
+
+    private String parseAgendaFromMeetingInfo(String meetingInfo) {
+        // The current meetingInfo string "ID: %d - Titre: %s (Début: %s)" does not contain the agenda.
+        // Agenda would need to be fetched separately or included in this string.
+        // For now, returning a placeholder.
+        // If a more detailed Reunion object was stored in the ListView, we could get it from there.
+        return "Non défini (non inclus dans la liste)"; 
+    }
+
+
+    @FXML
+    private void handleEnterMeeting() {
+        String selectedMeetingInfo = meetingsListView.getSelectionModel().getSelectedItem();
+        if (selectedMeetingInfo == null || selectedMeetingInfo.isEmpty()) {
+            showAlert(false, "Erreur", "Veuillez sélectionner une réunion pour y entrer.");
+            return;
+        }
+
+        String reunionId = parseReunionIdFromString(selectedMeetingInfo);
+        String title = parseTitleFromString(selectedMeetingInfo);
+        String agenda = parseAgendaFromMeetingInfo(selectedMeetingInfo); // Placeholder for now
+
+        if (reunionId == null) {
+            showAlert(false, "Erreur", "Impossible d'identifier l'ID de la réunion sélectionnée.");
+            return;
+        }
+
+        try {
+            FXMLLoader loader = new FXMLLoader(getClass().getResource("/reunion.fxml"));
+            Parent reunionRoot = loader.load();
+
+            ReunionController reunionController = loader.getController();
+            reunionController.setMeetingData(reunionId, title, agenda);
+            reunionController.setClientWebSocket(this.clientWebSocket); // Pass the existing WebSocket client
+
+            Stage stage = (Stage) enterMeetingButton.getScene().getWindow();
+            Scene scene = new Scene(reunionRoot);
+            stage.setScene(scene);
+            stage.setTitle("Réunion: " + title); // Set a more specific title
+            stage.show();
+
+        } catch (IOException e) {
+            e.printStackTrace();
+            showAlert(false, "Erreur de Navigation", "Impossible de charger la vue de la réunion: " + e.getMessage());
         }
     }
 

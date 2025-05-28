@@ -20,7 +20,7 @@ public class AuthentificationService implements WebSocketAction {
 
         switch (action) {
             case "connexion":
-                futureReponse = connexionAsync(data, actionOriginale);
+                futureReponse = connexionAsync(data, session, actionOriginale); // Pass session
                 break;
             default:
                 JSONObject errorJson = new JSONObject();
@@ -64,7 +64,7 @@ public class AuthentificationService implements WebSocketAction {
         });
     }
 
-    private CompletableFuture<String> connexionAsync(JSONObject data, String actionOriginale) {
+    private CompletableFuture<String> connexionAsync(JSONObject data, Session session, String actionOriginale) { // Added session parameter
         return CompletableFuture.supplyAsync(() -> {
             String login = data.optString("login");
             String password = data.optString("password");
@@ -78,6 +78,10 @@ public class AuthentificationService implements WebSocketAction {
                 Personne personne = personneManager.connecter(login, password);
 
                 if (personne != null) {
+                    // Store user info in session properties upon successful login
+                    session.getUserProperties().put("userId", personne.getId());
+                    session.getUserProperties().put("userName", personne.getLogin()); // Or getNom(), getPrenom()
+
                     reponseJson.put("statut", "succes");
                     reponseJson.put("message", "Connexion réussie");
                     // Ensure personne.toJsonObject() exists and works as expected

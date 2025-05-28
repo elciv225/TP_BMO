@@ -21,18 +21,36 @@ public class ClientWebSocket {
     private boolean reconnexion = false;
     private String ipServeur;
     private boolean estConnecte = false;
-    AuthentificationController controllerAuth;
-    EspaceUtilisateurController controllerEspc;
+    private AuthentificationController controllerAuth;
+    private EspaceUtilisateurController controllerEspc;
+    private ReunionController reunionController; // Added
 
     public void setControllerAuth(AuthentificationController controller) {
         this.controllerAuth = controller;
+        this.controllerEspc = null; // Clear other controllers
+        this.reunionController = null;
     }
 
     public void setControllerEspc(EspaceUtilisateurController controller) {
         this.controllerEspc = controller;
+        this.controllerAuth = null; // Clear other controllers
+        this.reunionController = null;
     }
 
-    public Session getSessionAuth() {
+    public void setReunionController(ReunionController controller) {
+        this.reunionController = controller;
+        this.controllerAuth = null; // Clear other controllers
+        this.controllerEspc = null;
+    }
+
+    public void clearReunionController() {
+        this.reunionController = null;
+        // Typically, after exiting a meeting, you might go back to EspaceUtilisateur.
+        // The EspaceUtilisateurController should re-register itself if needed.
+    }
+
+    // Consider renaming getSessionAuth to something more generic if it's used by other controllers
+    public Session getSession() { 
         return session;
     }
 
@@ -49,10 +67,39 @@ public class ClientWebSocket {
 
     @OnMessage
     public void onMessage(String message) {
-        System.out.println("Requête envoyé");
-        if (controllerAuth != null) {
-            controllerAuth.traiterReponseConnexion(message);
-            System.out.println("Traitement en cours ...");
+        System.out.println("Message reçu du serveur: " + message); // Log received message
+        org.json.JSONObject jsonResponse = new org.json.JSONObject(message);
+        String modele = jsonResponse.optString("modele");
+        String action = jsonResponse.optString("actionOriginale", jsonResponse.optString("action")); // Prefer actionOriginale
+
+        if ("chat".equals(modele) && reunionController != null) {
+            if ("nouveauMessage".equals(action) || "messageRecu".equals(action)) { // "messageRecu" if server echoes back sent message
+                String auteur = jsonResponse.optString("auteur", "Inconnu");
+                String contenu = jsonResponse.optString("contenu");
+                String timestamp = jsonResponse.optString("timestamp", java.time.LocalTime.now().format(java.time.format.DateTimeFormatter.ofPattern("HH:mm:ss")));
+                reunionController.displayChatMessage(auteur, contenu, timestamp);
+            } else if ("reponseHistoriqueMessages".equals(action) || "historiqueMessages".equals(action)) { // Match action from setMeetingData
+                org.json.JSONArray messagesArray = jsonResponse.optJSONArray("messages");
+                if (messagesArray != null) {
+                    for (int i = 0; i < messagesArray.length(); i++) {
+                        org.json.JSONObject msgJson = messagesArray.getJSONObject(i);
+                        String auteur = msgJson.optString("auteur", "Inconnu");
+                        String contenu = msgJson.optString("contenu");
+                        String timestamp = msgJson.optString("timestamp", java.time.LocalTime.now().format(java.time.format.DateTimeFormatter.ofPattern("HH:mm:ss")));
+                        // Display in chronological order (assuming server sends them that way)
+                        reunionController.displayChatMessage(auteur, contenu, timestamp);
+                    }
+                }
+            }
+        } else if (controllerAuth != null && "authentification".equals(modele)) {
+            // Route to AuthentificationController if it's an auth response
+             controllerAuth.traiterReponseConnexion(message); // This method needs to exist in AuthentificationController
+        } else if (controllerEspc != null) {
+            // Generic response for EspaceUtilisateurController (e.g. list meetings, create meeting response)
+            // The EspaceUtilisateurController's handleServerResponse method should parse based on "actionOriginale"
+            controllerEspc.handleServerResponse(message); 
+        } else {
+            System.err.println("Aucun contrôleur actif pour gérer le message du modèle: " + modele);
         }
     }
 

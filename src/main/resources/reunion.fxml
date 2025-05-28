@@ -15,17 +15,35 @@
     <children>
         <Label fx:id="connectionStatus" styleClass="connectionStatus" text="État de la connexion: Non connecté" />
 
-        <ScrollPane fitToWidth="true" prefHeight="300.0" prefWidth="580.0">
+        <VBox spacing="5.0" styleClass="detailsArea">
+            <padding>
+                <Insets bottom="5.0" top="5.0" />
+            </padding>
+            <children>
+                <Label fx:id="reunionTitleLabel" style="-fx-font-weight: bold; -fx-font-size: 1.5em;" text="Titre de la Réunion" />
+                <Label fx:id="reunionAgendaLabel" text="Agenda: ..." wrapText="true" />
+            </children>
+        </VBox>
+
+        <ScrollPane fitToWidth="true" prefHeight="300.0" prefWidth="580.0" VBox.vgrow="ALWAYS">
             <content>
-                <VBox fx:id="messageArea" styleClass="messageArea" />
+                <VBox fx:id="messageArea" styleClass="messageArea" prefHeight="200.0" />
             </content>
         </ScrollPane>
 
-        <HBox fx:id="inputArea" alignment="CENTER_LEFT" spacing="5.0">
+        <HBox fx:id="inputArea" alignment="CENTER_LEFT" spacing="5.0" VBox.vgrow="NEVER">
             <children>
-                <TextField fx:id="messageInput" prefHeight="30.0" prefWidth="400.0" promptText="Tapez votre message ici..." />
+                <TextField fx:id="messageInput" prefHeight="30.0" promptText="Tapez votre message ici..." HBox.hgrow="ALWAYS" />
                 <Button fx:id="sendButton" mnemonicParsing="false" text="Envoyer" />
             </children>
+            <padding>
+                <Insets top="5.0" bottom="5.0"/>
+            </padding>
         </HBox>
+        <Button fx:id="exitMeetingButton" mnemonicParsing="false" onAction="#handleExitMeeting" text="Quitter la Réunion" alignment="CENTER" maxWidth="Infinity">
+            <VBox.margin>
+                <Insets top="10.0" />
+            </VBox.margin>
+        </Button>
     </children>
 </VBox>
