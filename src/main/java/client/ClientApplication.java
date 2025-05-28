@@ -11,7 +11,7 @@ public class ClientApplication extends Application {
 
     @Override
     public void start(Stage stage) throws IOException {
-        FXMLLoader fxmlLoader = new FXMLLoader(ClientApplication.class.getResource("/authentification.fxml"));
+        FXMLLoader fxmlLoader = new FXMLLoader(ClientApplication.class.getResource("/connexionServeur.fxml"));
         Scene scene = new Scene(fxmlLoader.load());
         stage.setTitle("Serveur de réunion");
         stage.setScene(scene);

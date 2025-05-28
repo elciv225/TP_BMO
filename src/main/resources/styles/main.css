@@ -1,9 +1,98 @@
-:root{
-    --background-container : #fefefe;
-    --primary-color-logo: #6A6262;
-    --secondary-color-logo: #151313;
-    --text-color: #040404;
-    --text-color-light: #6A6262;
-    --border-color: #E7E7E7;
+/* Styles généraux */
+.root {
+    -fx-font-family: "Arial", sans-serif;
+    -fx-background-color: #f4f4f4; /* Fond gris clair */
 }
 
+VBox {
+    -fx-spacing: 15;
+    -fx-padding: 20;
+}
+
+Label {
+    -fx-font-size: 16px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #333;
+}
+
+TextField {
+    -fx-pref-width: 250px;
+    -fx-pref-height: 30px;
+    -fx-border-radius: 5px;
+    -fx-border-color: #ccc;
+    -fx-padding: 5px;
+}
+
+Button {
+    -fx-pref-width: 150px;
+    -fx-pref-height: 30px;
+    -fx-background-color: #4CAF50; /* Vert */
+    -fx-text-fill: white;
+    -fx-font-weight: bold;
+    -fx-border-radius: 5px;
+}
+
+Button:hover {
+    -fx-background-color: #3e8e41; /* Vert foncé au survol */
+}
+
+/* Styles pour authentification.fxml */
+#connexion {
+    -fx-pref-width: 250px;
+}
+
+/* Styles pour espaceUtilisateur.fxml */
+#welcomeLabel {
+    -fx-font-size: 18px;
+    -fx-text-fill: #007bff; /* Bleu */
+}
+
+/* Styles pour connexionServeur.fxml */
+#txtIpServeur {
+    -fx-pref-width: 200px;
+}
+
+/* Styles pour reunion.fxml (Messagerie de groupe) */
+#reunionContainer {
+    -fx-background-color: white;
+    -fx-border-color: #ccc;
+    -fx-border-width: 1px;
+    -fx-border-radius: 5px;
+}
+
+#messageArea {
+    -fx-padding: 10px;
+    -fx-vgap: 5px;
+    -fx-pref-height: 300px;
+    -fx-background-color: #f9f9f9;
+}
+
+.messageLabel {
+    -fx-background-color: #e0e0e0;
+    -fx-padding: 8px;
+    -fx-border-radius: 5px;
+    -fx-wrap-text: true;
+    -fx-max-width: 80%;
+}
+
+#inputArea {
+    -fx-padding: 10px;
+    -fx-hgap: 5px;
+}
+
+#messageInput {
+    -fx-pref-width: 400px;
+    -fx-pref-height: 30px;
+}
+
+#sendButton {
+    -fx-pref-width: 100px;
+}
+
+#connectionStatus {
+    -fx-text-fill: red;
+}
+
+#connectionStatus.connected {
+    -fx-text-fill: green;
+}

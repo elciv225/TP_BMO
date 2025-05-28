@@ -9,6 +9,7 @@ import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
 import javafx.scene.control.TextField;
 import javafx.stage.Stage;
+import javafx.stage.Window;
 import org.json.JSONObject;
 
 import java.io.IOException;
@@ -25,18 +26,24 @@ public class AuthentificationController {
 
     private ClientWebSocket clientWebSocket;
 
+    public void setClientWebSocket(ClientWebSocket clientWebSocket) {
+        this.clientWebSocket = clientWebSocket;
+    }
+
     @FXML
     public void initialize() {
         clientWebSocket = new ClientWebSocket();
-        clientWebSocket.setController(this); // Lien entre le controleur et le client WebSocket
+        clientWebSocket.setControllerAuth(this); // Lien entre le controleur et le client WebSocket
+    }
+
+    @FXML
+    private void handleClickConnexionServeur(){
+        clientWebSocket.connectToWebSocket(txtIpServeur.getText());
     }
 
 
     @FXML
-    private void handleClickConnexion() {
-        // Connexion au serveur
-        clientWebSocket.connectToWebSocket(txtIpServeur.getText());
-
+    private void handleClickConnexionAuthenfication() {
         clientWebSocket.envoyerRequete(jsonAuthentification());
     }
 
@@ -68,9 +75,16 @@ public class AuthentificationController {
         Platform.runLater(() -> {
             if ("succes".equals(statut)) {
                 try {
-                    showAlert("Connexion réussie", msg);
+                    showAlert( true,"Connexion réussie", msg);
+                    Stage stage = (Stage) Stage.getWindows().stream()
+                            .filter(Window::isShowing)
+                            .findFirst()
+                            .orElse(null);
                     FXMLLoader loader = new FXMLLoader(getClass().getResource("/espaceUtilisateur.fxml"));
                     Parent root = loader.load();
+                    EspaceUtilisateurController espcController = loader.getController();
+                    stage.setScene(new Scene(root));
+                    stage.show();
 
                     // Get the controller for the loaded FXML
                     EspaceUtilisateurController espaceUtilisateurController = loader.getController();
@@ -84,25 +98,28 @@ public class AuthentificationController {
                         espaceUtilisateurController.setUserInfo(nom, prenom);
                     }
 
-                    Stage stage = (Stage) txtLogin.getScene().getWindow();
-                    stage.setScene(new Scene(root));
-                    stage.show();
                 } catch (IOException e) {
                     e.printStackTrace();
-                    showAlert("Erreur", "Impossible de charger la page principale.");
+                    showAlert(false,"Erreur", "Impossible de charger la page principale.");
                 }
             } else {
-                showAlert("Échec de connexion", msg);
+                showAlert( false,"Échec de connexion", msg);
             }
         });
     }
 
-    private void showAlert(String title, String message) {
-        Alert alert = new Alert(Alert.AlertType.ERROR);
-        alert.setTitle(title);
+    public void showAlert(boolean success,String titre, String message) {
+        Alert.AlertType alertType = success ? Alert.AlertType.INFORMATION : Alert.AlertType.ERROR;
+        Alert alert = new Alert(alertType);
+        alert.setTitle(titre);
         alert.setHeaderText(null);
         alert.setContentText(message);
         alert.showAndWait();
     }
+
+    public Stage getCurrentScene() {
+        return (Stage) txtLogin.getScene().getWindow();
+    }
+
 
 }

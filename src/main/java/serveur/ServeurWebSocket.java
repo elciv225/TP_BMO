@@ -11,6 +11,7 @@ import javax.websocket.OnClose;
 import javax.websocket.OnError;
 import javax.websocket.OnMessage;
 import javax.websocket.OnOpen;
+import javax.websocket.server.PathParam;
 import javax.websocket.server.ServerEndpoint;
 
 import org.glassfish.tyrus.server.Server;
@@ -40,9 +41,9 @@ public class ServeurWebSocket {
     public static class EndpointServeur {
 
         @OnOpen
-        public void onOpen(Session session) {
+        public void onOpen(Session session,  @PathParam("ipClient") String ipClient) {
             sessions.add(session);
-            System.out.println("Nouvelle connexion établie avec la machine IP : ");
+            System.out.println("Nouvelle connexion établie avec la machine IP : " + ipClient);
             try {
                 // Envoyer un message de bienvenue au client
                 session.getBasicRemote().sendText("Connexion établie avec succès au serveur WebSocket!");

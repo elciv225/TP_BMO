@@ -10,6 +10,18 @@ public class Reunion {
     private String agenda;
     private LocalDate debut;
     private int duree;
+
+    public Reunion(String text, String text1, String text2, LocalDateTime debut, int duree, Type value, int organisateurId, Integer animateurId) {
+        this.nom = nom;
+        this.sujet = sujet;
+        this.agenda = agenda;
+        this.debut = LocalDate.from(debut);
+        this.duree = duree;
+        this.type = type;
+        this.idOrganisateur = idOrganisateur;
+        this.idAnimateur = idAnimateur;
+    }
+
     public enum Type {STANDARD, PRIVEE, DEMOCRATIQUE}
     private Type type;
     private int idOrganisateur;
@@ -97,5 +109,20 @@ public class Reunion {
 
     public void setIdAnimateur(int idAnimateur) {
         this.idAnimateur = idAnimateur;
+    }
+
+    @Override
+    public String toString() {
+        return "Reunion{" +
+                "id=" + id +
+                ", nom='" + nom + '\'' +
+                ", sujet='" + sujet + '\'' +
+                ", agenda='" + agenda + '\'' +
+                ", debut=" + debut +
+                ", duree=" + duree +
+                ", type=" + type +
+                ", idOrganisateur=" + idOrganisateur +
+                ", idAnimateur=" + idAnimateur +
+                '}';
     }
 }
