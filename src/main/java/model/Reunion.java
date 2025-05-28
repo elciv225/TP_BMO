@@ -1,6 +1,5 @@
 package model;
 
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 public class Reunion {
@@ -8,37 +7,42 @@ public class Reunion {
     private String nom;
     private String sujet;
     private String agenda;
-    private LocalDate debut;
+    private LocalDateTime debut; // CORRECTION: utiliser LocalDateTime au lieu de LocalDate
     private int duree;
+    private Type type;
+    private int idOrganisateur;
+    private Integer idAnimateur; // Nullable
 
-    public Reunion(String text, String text1, String text2, LocalDateTime debut, int duree, Type value, int organisateurId, Integer animateurId) {
+    public enum Type {
+        STANDARD, PRIVEE, DEMOCRATIQUE
+    }
+
+    // CORRECTION: Constructeur pour création (sans ID)
+    public Reunion(String nom, String sujet, String agenda, LocalDateTime debut, int duree, Type type, int idOrganisateur, Integer idAnimateur) {
         this.nom = nom;
         this.sujet = sujet;
         this.agenda = agenda;
-        this.debut = LocalDate.from(debut);
+        this.debut = debut;
         this.duree = duree;
         this.type = type;
         this.idOrganisateur = idOrganisateur;
         this.idAnimateur = idAnimateur;
     }
 
-    public enum Type {STANDARD, PRIVEE, DEMOCRATIQUE}
-    private Type type;
-    private int idOrganisateur;
-    private int idAnimateur;
-
-    public Reunion(int id, String nom, String sujet, String agenda, LocalDateTime debut, int duree, Type type, int idOrganisateur, int idAnimateur) {
+    // CORRECTION: Constructeur complet (avec ID, pour les données de la DB)
+    public Reunion(int id, String nom, String sujet, String agenda, LocalDateTime debut, int duree, Type type, int idOrganisateur, Integer idAnimateur) {
         this.id = id;
         this.nom = nom;
         this.sujet = sujet;
         this.agenda = agenda;
-        this.debut = LocalDate.from(debut);
+        this.debut = debut;
         this.duree = duree;
         this.type = type;
         this.idOrganisateur = idOrganisateur;
         this.idAnimateur = idAnimateur;
     }
 
+    // Getters et Setters
     public int getId() {
         return id;
     }
@@ -71,11 +75,11 @@ public class Reunion {
         this.agenda = agenda;
     }
 
-    public LocalDate getDebut() {
+    public LocalDateTime getDebut() {
         return debut;
     }
 
-    public void setDebut(LocalDate debut) {
+    public void setDebut(LocalDateTime debut) {
         this.debut = debut;
     }
 
@@ -103,11 +107,11 @@ public class Reunion {
         this.idOrganisateur = idOrganisateur;
     }
 
-    public int getIdAnimateur() {
+    public Integer getIdAnimateur() {
         return idAnimateur;
     }
 
-    public void setIdAnimateur(int idAnimateur) {
+    public void setIdAnimateur(Integer idAnimateur) {
         this.idAnimateur = idAnimateur;
     }
 

@@ -8,7 +8,7 @@ services:
       MYSQL_USER: tpbmo
       MYSQL_PASSWORD: tpbmo
     ports:
-      - "3306:3306"
+      - "3307:3306"
     volumes:
       - mysql_data:/var/lib/mysql
       - ./sql:/docker-entrypoint-initdb.d
@@ -16,7 +16,7 @@ services:
   phpmyadmin:
     image: phpmyadmin/phpmyadmin
     ports:
-      - "8081:80"
+      - "8087:80"
     environment:
       PMA_HOST: tpbmo_db
       PMA_PORT: 3306

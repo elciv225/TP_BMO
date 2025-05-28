@@ -11,31 +11,20 @@ import javafx.scene.control.TextField;
 import javafx.stage.Stage;
 import javafx.stage.Window;
 import org.json.JSONObject;
-import javafx.scene.layout.VBox; // Added for root pane
-import javafx.animation.FadeTransition; // Added for animation
-import javafx.util.Duration; // Added for animation
-import javafx.scene.Node; // Added for applyFadeInAnimation helper
+import javafx.scene.layout.VBox;
+import javafx.animation.FadeTransition;
+import javafx.util.Duration;
+import javafx.scene.Node;
 
 import java.io.IOException;
 
 public class AuthentificationController {
-    @FXML
-    public TextField txtIpServeur;
-    @FXML
-    public Button connexion; // Assuming this is from authentification.fxml based on its name
-    // If 'connexion' is the fx:id for the button in connexionServeur.fxml, it might conflict or be confusing.
-    // For now, proceeding with the assumption that FXML injection handles this correctly.
-    @FXML
-    public TextField txtPassword;
-    @FXML
-    public TextField txtLogin;
-
-    // Root panes for animation - these need to be public if initialize() is not from Initializable
-    // or if access is needed from a non-FXML context that calls initialize().
-    // However, @FXML fields are typically private. Let's assume standard FXML injection.
-    @FXML private VBox authRootPane; // For authentification.fxml
-    @FXML private VBox connexionServeurRootPane; // For connexionServeur.fxml
-
+    @FXML public TextField txtIpServeur;
+    @FXML public Button connexion;
+    @FXML public TextField txtPassword;
+    @FXML public TextField txtLogin;
+    @FXML private VBox authRootPane;
+    @FXML private VBox connexionServeurRootPane;
 
     private ClientWebSocket clientWebSocket;
 
@@ -45,8 +34,10 @@ public class AuthentificationController {
 
     @FXML
     public void initialize() {
-        clientWebSocket = new ClientWebSocket();
-        clientWebSocket.setControllerAuth(this); // Lien entre le controleur et le client WebSocket
+        if (clientWebSocket == null) {
+            clientWebSocket = new ClientWebSocket();
+            clientWebSocket.setControllerAuth(this);
+        }
 
         // Apply animations
         if (authRootPane != null) {
@@ -59,27 +50,45 @@ public class AuthentificationController {
 
     private void applyFadeInAnimation(Node node) {
         if (node != null) {
-            node.setOpacity(0.0); // Start fully transparent
-
+            node.setOpacity(0.0);
             FadeTransition fadeIn = new FadeTransition(Duration.millis(500), node);
             fadeIn.setFromValue(0.0);
             fadeIn.setToValue(1.0);
-            fadeIn.setDelay(Duration.millis(100)); // Optional delay
+            fadeIn.setDelay(Duration.millis(100));
             fadeIn.play();
-        } else {
-            // This might be expected if the controller instance is shared and only one FXML is active
-            // System.err.println("Cannot apply fade-in: node is null.");
         }
     }
 
     @FXML
     private void handleClickConnexionServeur(){
-        clientWebSocket.connectToWebSocket(txtIpServeur.getText());
+        String ipServeur = txtIpServeur.getText();
+        if (ipServeur == null || ipServeur.trim().isEmpty()) {
+            showAlert(false, "Erreur", "Veuillez saisir l'adresse IP du serveur.");
+            return;
+        }
+        clientWebSocket.connectToWebSocket(ipServeur.trim());
     }
-
 
     @FXML
     private void handleClickConnexionAuthenfication() {
+        String login = txtLogin.getText();
+        String password = txtPassword.getText();
+
+        if (login == null || login.trim().isEmpty()) {
+            showAlert(false, "Erreur", "Veuillez saisir votre nom d'utilisateur.");
+            return;
+        }
+
+        if (password == null || password.trim().isEmpty()) {
+            showAlert(false, "Erreur", "Veuillez saisir votre mot de passe.");
+            return;
+        }
+
+        if (clientWebSocket == null || !clientWebSocket.isConnected()) {
+            showAlert(false, "Erreur de connexion", "Pas de connexion au serveur. Veuillez d'abord vous connecter au serveur.");
+            return;
+        }
+
         clientWebSocket.envoyerRequete(jsonAuthentification());
     }
 
@@ -91,7 +100,7 @@ public class AuthentificationController {
         return "{"
                 + "\"modele\":\"authentification\","
                 + "\"action\":\"connexion\","
-                + "\"login\":\"" + txtLogin.getText() + "\","
+                + "\"login\":\"" + txtLogin.getText().trim() + "\","
                 + "\"password\":\"" + txtPassword.getText() + "\""
                 + "}";
     }
@@ -103,48 +112,71 @@ public class AuthentificationController {
             return;
         }
 
-        // Maintenant, on peut parser en JSON en toute sécurité
-        JSONObject jsonResponse = new JSONObject(message);
-        String statut = jsonResponse.optString("statut");
-        String msg = jsonResponse.optString("message");
+        try {
+            // Maintenant, on peut parser en JSON en toute sécurité
+            JSONObject jsonResponse = new JSONObject(message);
+            String type = jsonResponse.optString("type");
 
-        Platform.runLater(() -> {
-            if ("succes".equals(statut)) {
-                try {
-                    showAlert( true,"Connexion réussie", msg);
-                    Stage stage = (Stage) Stage.getWindows().stream()
-                            .filter(Window::isShowing)
-                            .findFirst()
-                            .orElse(null);
-                    FXMLLoader loader = new FXMLLoader(getClass().getResource("/espaceUtilisateur.fxml"));
-                    Parent root = loader.load();
-                    EspaceUtilisateurController espcController = loader.getController();
-                    stage.setScene(new Scene(root));
-                    stage.show();
-
-                    // Get the controller for the loaded FXML
-                    EspaceUtilisateurController espaceUtilisateurController = loader.getController();
-
-                    // Extract Nom and Prenom from the personne JSON
-                    JSONObject personneJson = jsonResponse.optJSONObject("personne");
-                    if (personneJson != null) {
-                        String nom = personneJson.optString("nom");
-                        String prenom = personneJson.optString("prenom");
-                        // Pass the data to the EspaceUtilisateurController
-                        espaceUtilisateurController.setUserInfo(nom, prenom);
-                    }
-
-                } catch (IOException e) {
-                    e.printStackTrace();
-                    showAlert(false,"Erreur", "Impossible de charger la page principale.");
-                }
-            } else {
-                showAlert( false,"Échec de connexion", msg);
+            // Ignorer les messages de bienvenue
+            if ("welcome".equals(type)) {
+                System.out.println("Message de bienvenue reçu: " + jsonResponse.optString("message"));
+                return;
             }
-        });
+
+            String statut = jsonResponse.optString("statut");
+            String msg = jsonResponse.optString("message");
+
+            Platform.runLater(() -> {
+                if ("succes".equals(statut)) {
+                    try {
+                        // CORRECTION: Ne pas afficher d'alerte pour la connexion réussie
+                        // L'utilisateur verra le changement d'interface
+
+                        Stage stage = getCurrentScene();
+                        FXMLLoader loader = new FXMLLoader(getClass().getResource("/espaceUtilisateur.fxml"));
+                        Parent root = loader.load();
+
+                        // Get the controller for the loaded FXML
+                        EspaceUtilisateurController espaceUtilisateurController = loader.getController();
+
+                        // Extract user information from the response
+                        JSONObject personneJson = jsonResponse.optJSONObject("personne");
+                        if (personneJson != null) {
+                            String nom = personneJson.optString("nom");
+                            String prenom = personneJson.optString("prenom");
+                            int userId = personneJson.optInt("id", -1);
+
+                            // CORRECTION: Passer toutes les informations nécessaires
+                            espaceUtilisateurController.setUserInfo(nom, prenom, userId, clientWebSocket);
+                        } else {
+                            // Fallback si pas d'info utilisateur
+                            espaceUtilisateurController.setClientWebSocket(clientWebSocket);
+                        }
+
+                        stage.setScene(new Scene(root));
+                        stage.show();
+
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                        showAlert(false, "Erreur", "Impossible de charger la page principale: " + e.getMessage());
+                    }
+                } else if ("echec".equals(statut)) {
+                    showAlert(false, "Échec de connexion", msg);
+                } else {
+                    // Message non géré
+                    System.out.println("Message non traité: " + message);
+                }
+            });
+        } catch (Exception e) {
+            System.err.println("Erreur lors du traitement de la réponse d'authentification: " + e.getMessage());
+            e.printStackTrace();
+            Platform.runLater(() -> {
+                showAlert(false, "Erreur", "Erreur lors du traitement de la réponse du serveur.");
+            });
+        }
     }
 
-    public void showAlert(boolean success,String titre, String message) {
+    public void showAlert(boolean success, String titre, String message) {
         Alert.AlertType alertType = success ? Alert.AlertType.INFORMATION : Alert.AlertType.ERROR;
         Alert alert = new Alert(alertType);
         alert.setTitle(titre);
@@ -156,6 +188,4 @@ public class AuthentificationController {
     public Stage getCurrentScene() {
         return (Stage) txtLogin.getScene().getWindow();
     }
-
-
 }

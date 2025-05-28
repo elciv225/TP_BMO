@@ -44,28 +44,45 @@ public class ClientWebSocket {
     public void onOpen(Session session) {
         this.session = session;
         reconnexion = false;
-        System.out.println("Connecté au serveur WebSocket");
+        estConnecte = true;
+        System.out.println("Connecté au serveur WebSocket - Session ID: " + session.getId());
     }
 
     @OnMessage
     public void onMessage(String message) {
-        System.out.println("Requête envoyé");
-        if (controllerAuth != null) {
-            controllerAuth.traiterReponseConnexion(message);
-            System.out.println("Traitement en cours ...");
+        System.out.println("Message reçu du serveur: " + message);
+
+        // CORRECTION: Vérifier si le message est au format JSON
+        if (message != null && message.trim().startsWith("{")) {
+            try {
+                if (controllerAuth != null) {
+                    controllerAuth.traiterReponseConnexion(message);
+                }
+                if (controllerEspc != null) {
+                    controllerEspc.traiterReponseConnexion(message);
+                }
+            } catch (Exception e) {
+                System.err.println("Erreur lors du traitement du message JSON: " + e.getMessage());
+                e.printStackTrace();
+            }
+        } else {
+            // Message de bienvenue ou autre message texte
+            System.out.println("Message texte du serveur: " + message);
         }
     }
 
     @OnClose
     public void onClose(CloseReason reason) {
         this.session = null;
+        estConnecte = false;
         System.out.println("Déconnecté - Raison: " + reason.getReasonPhrase());
         seReconnecter();
     }
 
     @OnError
     public void onError(Throwable t) {
-        System.out.println("Erreur de connexion: " + t.getMessage());
+        System.err.println("Erreur de connexion WebSocket: " + t.getMessage());
+        estConnecte = false;
         seReconnecter();
     }
 
@@ -73,8 +90,9 @@ public class ClientWebSocket {
      * Reconnexion automatique après 3 secondes.
      */
     private void seReconnecter() {
-        if (!reconnexion) {
+        if (!reconnexion && ipServeur != null) {
             reconnexion = true;
+            System.out.println("Tentative de reconnexion dans 3 secondes...");
             new Timer().schedule(new TimerTask() {
                 @Override
                 public void run() {
@@ -86,21 +104,24 @@ public class ClientWebSocket {
 
     /**
      * Envoie une requête texte au serveur WebSocket.
-     *
-     * @param jsonRequete La requête texte à envoyer (généralement une chaîne JSON).
      */
     public void envoyerRequete(String jsonRequete) {
         if (session != null && session.isOpen()) {
             try {
                 session.getBasicRemote().sendText(jsonRequete);
                 System.out.println("Requête envoyée au serveur : " + jsonRequete);
-
             } catch (IOException e) {
                 System.err.println("Erreur lors de l'envoi de la requête : " + e.getMessage());
-                // Gérer la déconnexion ou tenter une reconnexion si nécessaire
+                estConnecte = false;
             }
         } else {
-            System.out.println("Impossible d'envoyer la requête : la session WebSocket n'est pas ouverte.");
+            System.err.println("Impossible d'envoyer la requête : la session WebSocket n'est pas ouverte.");
+            if (controllerAuth != null) {
+                Platform.runLater(() -> {
+                    controllerAuth.showAlert(false, "Erreur de connexion",
+                        "La connexion au serveur a été perdue. Reconnexion en cours...");
+                });
+            }
         }
     }
 
@@ -111,19 +132,21 @@ public class ClientWebSocket {
         new Thread(() -> {
             try {
                 // Vérifier si une connexion est déjà en cours ou établie
-                if (estConnecte) {
-                    System.out.println("Connexion déjà en cours ou établie");
+                if (estConnecte && session != null && session.isOpen()) {
+                    System.out.println("Connexion déjà établie et active");
                     return;
                 }
 
                 String ipClient = getAdresseIP();
-
                 WebSocketContainer container = ContainerProvider.getWebSocketContainer();
                 String webSocketUrl = "ws://" + ipEntree + ":8080/?ipClient=" + ipClient;
+
+                System.out.println("Tentative de connexion à: " + webSocketUrl);
                 container.connectToServer(this, new URI(webSocketUrl));
+
                 // Enregistrer l'adresse IP du serveur pour reconnection
                 this.ipServeur = ipEntree;
-                estConnecte = true;
+
                 Platform.runLater(() -> {
                     Stage stage = (Stage) Stage.getWindows().stream()
                             .filter(Window::isShowing)
@@ -136,30 +159,36 @@ public class ClientWebSocket {
                             Parent root = loader.load();
                             AuthentificationController authController = loader.getController();
                             authController.setClientWebSocket(this);
+                            setControllerAuth(authController);
                             stage.setScene(new Scene(root));
                             stage.show();
                         } catch (IOException e) {
+                            System.err.println("Erreur lors du chargement de l'interface d'authentification: " + e.getMessage());
                             e.printStackTrace();
                         }
                     } else {
-                        System.out.println("Aucune fenêtre active trouvée !");
+                        System.err.println("Aucune fenêtre active trouvée !");
                     }
                 });
 
                 System.out.println("Connecté au serveur WebSocket sur " + webSocketUrl);
 
             } catch (DeploymentException | URISyntaxException | IOException e) {
-                System.out.println("Non connecté - Erreur: " + e.getMessage());
-                seReconnecter();
+                System.err.println("Échec de connexion au serveur: " + e.getMessage());
+                estConnecte = false;
+                if (!reconnexion) {
+                    seReconnecter();
+                }
+            } catch (Exception e) {
+                System.err.println("Erreur inattendue lors de la connexion: " + e.getMessage());
                 e.printStackTrace();
+                estConnecte = false;
             }
         }).start();
     }
 
     /**
      * Récupère l'adresse IP locale de la machine.
-     *
-     * @return L'adresse IP locale de la machine.
      */
     public static String getAdresseIP() {
         try {
@@ -183,9 +212,17 @@ public class ClientWebSocket {
                 }
             }
         } catch (Exception e) {
-            e.printStackTrace();
+            System.err.println("Erreur lors de la récupération de l'adresse IP: " + e.getMessage());
         }
-        return "Adresse IP non trouvée";
+        return "127.0.0.1"; // Fallback vers localhost
     }
 
+    // Getters pour les tests et debugging
+    public boolean isConnected() {
+        return estConnecte && session != null && session.isOpen();
+    }
+
+    public String getServerIP() {
+        return ipServeur;
+    }
 }

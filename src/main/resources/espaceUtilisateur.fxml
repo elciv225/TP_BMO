@@ -5,7 +5,6 @@
 <?import javafx.scene.control.Label?>
 <?import javafx.scene.control.TextField?>
 <?import javafx.scene.layout.VBox?>
-<?import javafx.geometry.Insets?>
 
 <!-- Root VBox uses both page-container for common layout and espace-utilisateur-container for specific overrides -->
 <VBox fx:id="espaceUtilisateurRootPane" styleClass="page-container, espace-utilisateur-container" alignment="TOP_CENTER" spacing="30.0" prefHeight="500.0" prefWidth="600.0" stylesheets="@styles/main.css" xmlns="http://javafx.com/javafx/23.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="client.EspaceUtilisateurController">
@@ -25,11 +24,10 @@
     <VBox styleClass="section-box" alignment="CENTER_LEFT" spacing="15.0">
         <children>
             <Label text="Rejoindre une Réunion Existante" styleClass="section-title"/>
-            <Label text="Titre de la réunion:" styleClass="field-label"/>
+            <Label text="Titre ou ID de la réunion:" styleClass="field-label"/>
             <TextField fx:id="txtTitreReunion" styleClass="styled-text-field" promptText="Entrez le titre ou l'ID de la réunion"/>
+            <!-- CORRECTION: Nom de méthode corrigé -->
             <Button fx:id="btnRejoindre" text="Rejoindre la réunion" styleClass="primary-button" onAction="#handleClickJoinReunion"/>
-            <!-- Assuming handleClickJoinReunion is the intended handler for joining -->
         </children>
     </VBox>
-    <!-- Add other UI elements for the user space here -->
 </VBox>
