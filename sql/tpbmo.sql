@@ -62,6 +62,27 @@ CREATE TABLE IF NOT EXISTS message
     heure_envoi TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
+-- Nouvelle table pour les invitations en attente
+CREATE TABLE IF NOT EXISTS invitation_reunion
+(
+    id                  INT AUTO_INCREMENT PRIMARY KEY,
+    reunion_id          INT NOT NULL,
+    personne_invitee_id INT NOT NULL,
+    inviteur_id         INT NOT NULL,                          -- Qui a envoyé l'invitation
+    statut              ENUM ('EN_ATTENTE', 'ACCEPTEE', 'REFUSEE') DEFAULT 'EN_ATTENTE',
+    date_invitation     TIMESTAMP                                  DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (reunion_id) REFERENCES reunion (id) ON DELETE CASCADE,
+    FOREIGN KEY (personne_invitee_id) REFERENCES personne (id) ON DELETE CASCADE,
+    FOREIGN KEY (inviteur_id) REFERENCES personne (id) ON DELETE CASCADE,
+    UNIQUE KEY uk_invitation (reunion_id, personne_invitee_id) -- Un utilisateur ne peut être invité qu'une fois à la même réunion
+);
+
+INSERT INTO personne (nom, prenom, login, password, connecte)
+VALUES ('Assy', 'Eliel Onésime', 'eassy', 'eassy', FALSE),
+       ('Ouattara', 'Katié Myriam', 'okatie', 'okatie', FALSE),
+       ('Logbo', 'Zoukou Axelle', 'azoukou', 'azoukou', FALSE);
+
+
 -- 2. Ajout des contraintes de clés étrangères
 
 -- Contraintes pour la table reunion

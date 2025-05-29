@@ -400,11 +400,12 @@ public class ReunionController {
         clientWebSocket.envoyerRequete(inviteJson.toString());
     }
 
+    // Dans ReunionController.java
     private void handleInvitationResult(JSONObject json) {
         boolean success = json.optBoolean("success", false);
         String message = json.optString("message", "Aucun message du serveur.");
         if (success) {
-            showAlert(Alert.AlertType.INFORMATION, "Invitation Envoyée", message);
+            showAlert(Alert.AlertType.INFORMATION, "Invitation Envoyée", message); // CECI EST LA NOTIFICATION ACTUELLE
             inviteUserField.clear();
         } else {
             showAlert(Alert.AlertType.ERROR, "Erreur d'Invitation", message);

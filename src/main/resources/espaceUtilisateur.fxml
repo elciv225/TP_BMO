@@ -11,11 +11,11 @@
 <?import javafx.scene.layout.HBox?>
 <?import javafx.scene.layout.VBox?>
 <?import javafx.scene.shape.SVGPath?>
-
 <?import javafx.scene.layout.Pane?>
+
 <BorderPane styleClass="page-container" stylesheets="@/styles/main.css"
             xmlns:fx="http://javafx.com/fxml/1" xmlns="http://javafx.com/javafx/21"
-            fx:controller="client.EspaceUtilisateurController" prefHeight="600.0" prefWidth="800.0">
+            fx:controller="client.EspaceUtilisateurController" prefHeight="750.0" prefWidth="800.0">
     <top>
         <HBox alignment="CENTER_LEFT" spacing="10" style="-fx-padding: 16px; -fx-border-width: 0 0 1px 0; -fx-border-color: -border-color-light;">
             <SVGPath content="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z" styleClass="icon-graphic" scaleX="1.2" scaleY="1.2"/>
@@ -26,7 +26,8 @@
     </top>
 
     <center>
-        <VBox spacing="30" alignment="TOP_CENTER" style="-fx-padding: 32px;">
+        <!-- Réduction du padding global et spacing -->
+        <VBox spacing="20" alignment="TOP_CENTER" style="-fx-padding: 24px;">
             <HBox spacing="20" alignment="CENTER">
                  <Button fx:id="btnCreerReunion" text="➕ Nouvelle Réunion"
                         onAction="#handleClickCreerReunion" styleClass="primary-action-button" prefHeight="48.0" prefWidth="220"/>
@@ -40,14 +41,27 @@
 
             <Separator prefWidth="200.0"/>
 
-            <VBox spacing="15" VBox.vgrow="ALWAYS" alignment="TOP_CENTER">
-                <Label text="Vos Réunions à Venir" styleClass="section-title"/>
-                <ListView fx:id="listeReunionsUtilisateur" prefHeight="300.0" styleClass="list-view">
-                    <placeholder>
-                        <Label text="Aucune réunion planifiée." styleClass="secondary-text"/>
-                    </placeholder>
-                </ListView>
-            </VBox>
+            <HBox spacing="20" VBox.vgrow="ALWAYS" alignment="TOP_CENTER">
+                <VBox spacing="10" HBox.hgrow="ALWAYS" alignment="TOP_CENTER" prefWidth="350">
+                    <Label text="Vos Réunions à Venir" styleClass="section-title"/>
+                    <ListView fx:id="listeReunionsUtilisateur" prefHeight="250.0" styleClass="list-view">
+                        <placeholder>
+                            <Label text="Aucune réunion planifiée." styleClass="secondary-text"/>
+                        </placeholder>
+                    </ListView>
+                </VBox>
+
+                <Separator orientation="VERTICAL" HBox.hgrow="NEVER"/>
+
+                <VBox spacing="10" HBox.hgrow="ALWAYS" alignment="TOP_CENTER" prefWidth="350">
+                    <Label text="Invitations en Attente" styleClass="section-title"/>
+                    <ListView fx:id="listeInvitations" prefHeight="250.0" styleClass="list-view">
+                        <placeholder>
+                            <Label text="Aucune invitation en attente." styleClass="secondary-text"/>
+                        </placeholder>
+                    </ListView>
+                </VBox>
+            </HBox>
         </VBox>
     </center>
 </BorderPane>

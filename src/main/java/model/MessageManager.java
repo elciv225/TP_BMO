@@ -1,5 +1,5 @@
 package model;
-import serveur.Database;
+import serveur.Database; //
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -12,11 +12,11 @@ public class MessageManager {
     private Connection connection;
 
     public MessageManager() throws SQLException {
-        this.connection = Database.getConnection();
+        this.connection = Database.getConnection(); //
     }
 
     public Message envoyerMessage(int personneId, int reunionId, String contenu) throws SQLException {
-        String sql = "INSERT INTO message (personne_id, reunion_id, contenu) VALUES (?, ?, ?)";
+        String sql = "INSERT INTO message (personne_id, reunion_id, contenu) VALUES (?, ?, ?)"; //
         try (PreparedStatement pstmt = connection.prepareStatement(sql, PreparedStatement.RETURN_GENERATED_KEYS)) {
             pstmt.setInt(1, personneId);
             pstmt.setInt(2, reunionId);
@@ -39,20 +39,24 @@ public class MessageManager {
 
     public List<Message> obtenirMessagesReunion(int reunionId) throws SQLException {
         List<Message> messages = new ArrayList<>();
-        String sql = "SELECT m.id, m.personne_id, m.contenu, m.heure_envoi, p.nom, p.prenom " +
+        // CORRECTION : Ajout de m.reunion_id à la clause SELECT
+        String sql = "SELECT m.id, m.personne_id, m.reunion_id, m.contenu, m.heure_envoi, p.nom, p.prenom " +
                 "FROM message m JOIN personne p ON m.personne_id = p.id " +
-                "WHERE m.reunion_id = ? ORDER BY m.heure_envoi ASC";
+                "WHERE m.reunion_id = ? ORDER BY m.heure_envoi ASC"; //
         try (PreparedStatement pstmt = connection.prepareStatement(sql)) {
             pstmt.setInt(1, reunionId);
             ResultSet rs = pstmt.executeQuery();
             while (rs.next()) {
+                // Assurez-vous que cette ligne correspond à la ligne 52 de votre fichier si c'est là que l'erreur se produit.
+                // Le constructeur de Message attend (id, idPersonne, idReunion, contenu).
+                // Nous utilisons rs.getInt("reunion_id") car nous l'avons ajouté au SELECT.
                 Message message = new Message(
                         rs.getInt("id"),
                         rs.getInt("personne_id"),
-                        rs.getInt("reunion_id"),
+                        rs.getInt("reunion_id"), // Lecture de la colonne reunion_id sélectionnée
                         rs.getString("contenu")
-                );
-                message.setHeureEnvoi(rs.getTimestamp("heure_envoi").toLocalDateTime());
+                ); //
+                message.setHeureEnvoi(rs.getTimestamp("heure_envoi").toLocalDateTime()); //
                 messages.add(message);
             }
         }
@@ -60,7 +64,7 @@ public class MessageManager {
     }
 
     private Message obtenirMessageParId(int id) throws SQLException {
-        String sql = "SELECT id, personne_id, reunion_id, contenu, heure_envoi FROM message WHERE id = ?";
+        String sql = "SELECT id, personne_id, reunion_id, contenu, heure_envoi FROM message WHERE id = ?"; //
         try (PreparedStatement pstmt = connection.prepareStatement(sql)) {
             pstmt.setInt(1, id);
             ResultSet rs = pstmt.executeQuery();
@@ -70,8 +74,8 @@ public class MessageManager {
                         rs.getInt("personne_id"),
                         rs.getInt("reunion_id"),
                         rs.getString("contenu")
-                );
-                message.setHeureEnvoi(rs.getTimestamp("heure_envoi").toLocalDateTime());
+                ); //
+                message.setHeureEnvoi(rs.getTimestamp("heure_envoi").toLocalDateTime()); //
                 return message;
             }
             return null;
