@@ -5,13 +5,15 @@
 <?import javafx.scene.control.TextField?>
 <?import javafx.scene.layout.VBox?>
 
-<!-- Root VBox uses both page-container for common layout and connexion-container for specific overrides -->
-<VBox fx:id="connexionServeurRootPane" styleClass="page-container, connexion-container" alignment="CENTER" spacing="20" prefHeight="350.0" prefWidth="450.0" stylesheets="@styles/main.css" xmlns="http://javafx.com/javafx/23.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="client.AuthentificationController">
+<!-- Root VBox uses connexion-container for specific styling. page-container provides global defaults. -->
+<!-- Spacing is now controlled by the connexion-container CSS class -->
+<VBox fx:id="connexionServeurRootPane" styleClass="page-container, connexion-container" alignment="CENTER" prefHeight="350.0" prefWidth="400.0" stylesheets="@styles/main.css" xmlns="http://javafx.com/javafx/23.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="client.AuthentificationController">
    <children>
-      <Label styleClass="main-title" text="Bienvenue sur l'application de réunion" /> <!-- Changed from welcome-title to main-title -->
-      <Label styleClass="ip-label" text="Adresse IP Serveur" /> <!-- ip-label is specific, kept -->
-      <TextField fx:id="txtIpServeur" styleClass="styled-text-field" minHeight="25.0" promptText="Ecrivez ici ...." />
-      <Button fx:id="btnConnexionServeur" mnemonicParsing="false" onAction="#handleClickConnexionServeur" prefHeight="15.0" prefWidth="150.0" text="Connexion au serveur" />
-      <!-- Note: btnConnexionServeur has a distinct style (green) and does not use .primary-button -->
+      <Label styleClass="main-title" text="Bienvenue sur l'application de réunion" />
+      <Label styleClass="ip-label" text="Adresse IP Serveur" />
+      <!-- TextField now uses standard height and more descriptive prompt text -->
+      <TextField fx:id="txtIpServeur" styleClass="styled-text-field" maxWidth="250.0" prefHeight="40.0" promptText="Adresse IP du serveur" />
+      <!-- Button size is now controlled by its ID style in CSS (#btnConnexionServeur) -->
+      <Button fx:id="btnConnexionServeur" mnemonicParsing="false" onAction="#handleClickConnexionServeur" text="Connexion au serveur" />
    </children>
 </VBox>

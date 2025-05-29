@@ -5,10 +5,12 @@
 <?import javafx.scene.control.TextField?>
 <?import javafx.scene.layout.VBox?>
 
-<!-- Root VBox uses both page-container for common layout and auth-container for specific overrides -->
-<VBox fx:id="authRootPane" styleClass="page-container, auth-container" alignment="CENTER" maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="350.0" prefWidth="450.0" spacing="15.0" stylesheets="@styles/main.css" xmlns="http://javafx.com/javafx/23.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="client.AuthentificationController">
-   <Label styleClass="main-title" text="Authentification" /> <!-- Changed from title-label to main-title -->
-   <TextField fx:id="txtLogin" styleClass="styled-text-field" maxWidth="-Infinity" prefHeight="30.0" prefWidth="250.0" promptText="login" />
-   <TextField fx:id="txtPassword" styleClass="styled-text-field" maxWidth="-Infinity" prefHeight="30.0" prefWidth="250.0" promptText="password" />
+<!-- Root VBox uses auth-container for specific auth screen styling. page-container might be redundant if auth-container defines full page look. -->
+<!-- Spacing is now controlled by the auth-container CSS class -->
+<VBox fx:id="authRootPane" styleClass="page-container, auth-container" alignment="CENTER" maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="350.0" prefWidth="400.0" stylesheets="@styles/main.css" xmlns="http://javafx.com/javafx/23.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="client.AuthentificationController">
+   <Label styleClass="main-title" text="Authentification" />
+   <!-- TextFields now use the standard height defined in CSS -->
+   <TextField fx:id="txtLogin" styleClass="styled-text-field" maxWidth="250.0" prefHeight="40.0" prefWidth="250.0" promptText="login" />
+   <TextField fx:id="txtPassword" styleClass="styled-text-field" maxWidth="250.0" prefHeight="40.0" prefWidth="250.0" promptText="password" />
    <Button fx:id="connexion" styleClass="primary-button" mnemonicParsing="false" onAction="#handleClickConnexionAuthenfication" text="S'authentifier" />
 </VBox>

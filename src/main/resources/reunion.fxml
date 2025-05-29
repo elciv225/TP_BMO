@@ -27,19 +27,17 @@
     <HBox styleClass="reunion-header"
           alignment="CENTER_LEFT"
           spacing="20.0"
-          prefHeight="70.0"
-          style="-fx-background-color: linear-gradient(135deg, #5b5fc7 0%, #667eea 100%); -fx-padding: 0 30;">
+          prefHeight="70.0">
 
         <!-- Indicateur de statut -->
         <HBox alignment="CENTER_LEFT" spacing="10.0">
             <Label text="🔴"
                    fx:id="statusIndicator"
-                   style="-fx-font-size: 1.5em;"
+                   styleClass="status-dot"
                    managed="true"/>
             <Label fx:id="connectionStatus"
                    styleClass="connectionStatus, connected"
-                   text="🎥 Réunion en cours"
-                   style="-fx-font-size: 1.2em; -fx-font-weight: 600; -fx-text-fill: white;"/>
+                   text="🎥 Réunion en cours"/>
         </HBox>
 
         <!-- Espacement flexible -->
@@ -49,40 +47,32 @@
         <HBox alignment="CENTER_RIGHT" spacing="15.0">
             <Label text="👥 Participants: 1"
                    fx:id="participantCount"
-                   style="-fx-text-fill: rgba(255,255,255,0.9); -fx-font-size: 1em;"/>
+                   styleClass="header-info-text"/>
             <Label text="⏱️ 00:15:32"
                    fx:id="meetingDuration"
-                   style="-fx-text-fill: rgba(255,255,255,0.9); -fx-font-size: 1em;"/>
+                   styleClass="header-info-text"/>
         </HBox>
     </HBox>
 
     <!-- Zone principale de contenu -->
     <HBox VBox.vgrow="ALWAYS" spacing="0">
-
-        <!-- Zone de chat principale -->
         <VBox HBox.hgrow="ALWAYS" spacing="0">
 
             <!-- Zone de messages avec scroll moderne -->
-            <ScrollPane fitToWidth="true"
-                       VBox.vgrow="ALWAYS"
-                       styleClass="scroll-pane"
-                       style="-fx-background-color: linear-gradient(180deg, #f8f9fa 0%, #e9ecef 100%);">
+            <ScrollPane fx:id="messageScrollPane"
+                        fitToWidth="true"
+                        VBox.vgrow="ALWAYS"
+                        styleClass="scroll-pane, message-area-scroll-pane">
                 <content>
                     <VBox fx:id="messageArea"
-                          styleClass="messageArea"
-                          spacing="12.0"
-                          style="-fx-background-color: transparent;">
-                        <padding>
-                            <Insets top="20.0" bottom="20.0" left="20.0" right="20.0"/>
-                        </padding>
-
+                          styleClass="messageArea">
                         <!-- Message de bienvenue -->
-                        <VBox alignment="CENTER" spacing="10.0" style="-fx-padding: 20 0;">
-                            <Label text="🎉" style="-fx-font-size: 3em;"/>
+                        <VBox alignment="CENTER" spacing="10.0" styleClass="chat-welcome-message-container">
+                            <Label text="🎉" styleClass="chat-welcome-icon"/>
                             <Label text="Bienvenue dans votre réunion !"
-                                   style="-fx-font-size: 1.4em; -fx-font-weight: 600; -fx-text-fill: #5b5fc7;"/>
+                                   styleClass="chat-welcome-title"/>
                             <Label text="Commencez à discuter avec vos participants"
-                                   style="-fx-font-size: 1em; -fx-text-fill: #6c757d;"/>
+                                   styleClass="chat-welcome-subtitle"/>
                         </VBox>
                     </VBox>
                 </content>
@@ -96,14 +86,11 @@
                   managed="false"
                   visible="false"
                   prefHeight="80.0">
-                <padding>
-                    <Insets top="15.0" bottom="15.0" left="25.0" right="25.0"/>
-                </padding>
+                <!-- Padding removed, should be handled by .invitation-area CSS -->
 
-                <Label text="👥" style="-fx-font-size: 1.5em;"/>
+                <Label text="👥" styleClass="invitation-area-icon"/>
                 <Label text="Inviter un participant:"
-                       styleClass="field-label"
-                       style="-fx-font-weight: 600; -fx-font-size: 1.1em;"/>
+                       styleClass="field-label, invitation-area-label"/>
 
                 <TextField fx:id="inviteUserField"
                           styleClass="invite-user-field"
@@ -123,30 +110,28 @@
                   alignment="CENTER_LEFT"
                   spacing="15.0"
                   prefHeight="90.0"
-                  style="-fx-background-color: rgba(255, 255, 255, 0.95); -fx-border-color: rgba(0,0,0,0.1); -fx-border-width: 1 0 0 0;">
-                <padding>
-                    <Insets top="20.0" bottom="20.0" left="25.0" right="25.0"/>
-                </padding>
+                  styleClass="chat-input-container">
+                <!-- Padding removed, should be handled by .chat-input-container CSS -->
 
                 <!-- Champ de saisie avec style moderne -->
                 <TextField fx:id="messageInput"
                           prefHeight="50.0"
                           HBox.hgrow="ALWAYS"
                           promptText="💬 Tapez votre message ici..."
-                          style="-fx-background-color: white; -fx-border-color: #dee2e6; -fx-border-width: 2; -fx-border-radius: 25; -fx-background-radius: 25; -fx-padding: 15 20; -fx-font-size: 1.1em; -fx-prompt-text-fill: #6c757d;"/>
+                          styleClass="chat-input-field"/>
 
                 <!-- Boutons d'action modernes -->
                 <HBox spacing="10.0" alignment="CENTER">
                     <!-- Bouton emoji (futur) -->
                     <Button text="😊"
-                            style="-fx-background-color: transparent; -fx-border-color: transparent; -fx-font-size: 1.5em; -fx-padding: 10;"
+                            styleClass="chat-emoji-button"
                             managed="false"
                             visible="false"/>
 
                     <!-- Bouton d'envoi moderne -->
                     <Button fx:id="sendButton"
                             text="📤"
-                            style="-fx-background-color: #5b5fc7 0%, #667eea 100%; -fx-text-fill: white; -fx-border-radius: 50%; -fx-background-radius: 50%; -fx-font-size: 1.3em; -fx-font-weight: bold; -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.2), 4, 0.3, 0, 1);"
+                            styleClass="chat-send-button"
                             prefWidth="55.0"
                             prefHeight="55.0"
                             minWidth="55.0"
@@ -158,37 +143,34 @@
         <!-- Panneau latéral (futur - participants) -->
         <VBox fx:id="sidePanel"
               prefWidth="320.0"
-              style="-fx-background-color: rgba(248, 249, 250, 0.95); -fx-border-color: rgba(0,0,0,0.1); -fx-border-width: 0 0 0 1;"
+              styleClass="side-panel-container"
               managed="false"
               visible="false">
-
-            <padding>
-                <Insets top="20.0" bottom="20.0" left="20.0" right="20.0"/>
-            </padding>
+            <!-- Padding removed, handled by .side-panel-container CSS -->
 
             <!-- En-tête du panneau -->
-            <HBox alignment="CENTER_LEFT" spacing="10.0" style="-fx-padding: 0 0 20 0;">
-                <Label text="👥" style="-fx-font-size: 1.5em;"/>
+            <HBox alignment="CENTER_LEFT" spacing="10.0" styleClass="side-panel-header">
+                <Label text="👥" styleClass="side-panel-header-icon"/>
                 <Label text="Participants"
-                       style="-fx-font-size: 1.3em; -fx-font-weight: 600; -fx-text-fill: #495057;"/>
+                       styleClass="side-panel-title"/>
             </HBox>
 
             <!-- Liste des participants (à implémenter) -->
-            <ScrollPane fitToWidth="true" VBox.vgrow="ALWAYS">
+            <ScrollPane fitToWidth="true" VBox.vgrow="ALWAYS" styleClass="scroll-pane, side-panel-scroll-pane">
                 <content>
-                    <VBox fx:id="participantsList" spacing="10.0">
+                    <VBox fx:id="participantsList" spacing="10.0" styleClass="participants-list-container">
                         <!-- Les participants seront ajoutés dynamiquement -->
                     </VBox>
                 </content>
             </ScrollPane>
 
             <!-- Actions du panneau -->
-            <VBox spacing="10.0" style="-fx-padding: 20 0 0 0;">
+            <VBox spacing="10.0" styleClass="side-panel-actions-container">
                 <Button text="🔗 Copier le lien"
-                        style="-fx-background-color: transparent; -fx-text-fill: #5b5fc7; -fx-border-color: #5b5fc7; -fx-border-width: 1; -fx-border-radius: 8; -fx-background-radius: 8; -fx-padding: 10 15;"
+                        styleClass="button-outline"
                         prefWidth="280.0"/>
                 <Button text="⚙️ Paramètres"
-                        style="-fx-background-color: transparent; -fx-text-fill: #6c757d; -fx-border-color: #dee2e6; -fx-border-width: 1; -fx-border-radius: 8; -fx-background-radius: 8; -fx-padding: 10 15;"
+                        styleClass="button-secondary-outline"
                         prefWidth="280.0"/>
             </VBox>
         </VBox>

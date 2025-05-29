@@ -1,196 +1,280 @@
 /* ===================================
-   🎨 MODERN JAVAFX STYLES - Teams/Meet Style
+   🎨 MODERN JAVAFX STYLES - Google Inspired Theme
    Compatible with JavaFX FXML
    =================================== */
 
-/* === Reset et Base === */
+* {
+    /* Color Palette */
+    -primary-color: #1a73e8; /* Google Blue */
+    -primary-dark-color: #1558b0; /* Darker Google Blue */
+    -secondary-color: #5f6368; /* Google Grey */
+    -secondary-light-color: #e8eaed; /* Lighter Google Grey */
+    -background-color: #ffffff;
+    -surface-color: #f8f9fa; /* Light grey for surfaces like cards, dialogs */
+    -error-color: #d93025; /* Google Red */
+
+    /* Text Colors */
+    -text-primary-color: #202124; /* Almost Black */
+    -text-secondary-color: #5f6368; /* Google Grey */
+    -text-inverse-color: #ffffff;
+    -text-on-primary-color: #ffffff;
+    -text-on-error-color: #ffffff;
+
+    /* Font Families */
+    -font-family-primary: "Roboto", "Segoe UI", "Arial", sans-serif;
+    -font-family-monospace: "Roboto Mono", "Courier New", monospace;
+
+    /* Font Sizes */
+    -font-size-small: 12px;
+    -font-size-medium: 14px; /* Base */
+    -font-size-large: 16px;
+    -font-size-xlarge: 20px;
+    -font-size-xxlarge: 24px;
+    -font-size-display1: 34px;
+    -font-size-headline: 28px; /* Adjusted for typical app titles */
+    -font-size-title: 22px; /* For section titles */
+    -font-size-subhead: 18px; /* For less prominent titles */
+
+    /* Spacing Units */
+    -spacing-xxsmall: 4px;
+    -spacing-xsmall: 8px;
+    -spacing-small: 12px;
+    -spacing-medium: 16px;
+    -spacing-large: 24px;
+    -spacing-xlarge: 32px;
+    -spacing-xxlarge: 48px;
+
+    /* Border Radius */
+    -border-radius-small: 4px;
+    -border-radius-medium: 8px;
+    -border-radius-large: 16px; /* For larger containers or dialogs */
+
+    /* Shadows - Subtle Material Design like shadows */
+    -shadow-dp1: dropshadow(gaussian, rgba(0, 0, 0, 0.12), 3, 0.1, 0, 1);
+    -shadow-dp2: dropshadow(gaussian, rgba(0, 0, 0, 0.16), 6, 0.15, 0, 2);
+    -shadow-dp3: dropshadow(gaussian, rgba(0, 0, 0, 0.20), 10, 0.2, 0, 3);
+    -shadow-dp4: dropshadow(gaussian, rgba(0, 0, 0, 0.24), 14, 0.25, 0, 4);
+    -shadow-dp6: dropshadow(gaussian, rgba(0, 0, 0, 0.28), 18, 0.3, 0, 6);
+    -shadow-dp8: dropshadow(gaussian, rgba(0, 0, 0, 0.32), 22, 0.35, 0, 8);
+    -shadow-dp12: dropshadow(gaussian, rgba(0, 0, 0, 0.36), 30, 0.4, 0, 12);
+    -shadow-dp16: dropshadow(gaussian, rgba(0, 0, 0, 0.40), 38, 0.45, 0, 16);
+    -shadow-dp24: dropshadow(gaussian, rgba(0, 0, 0, 0.44), 54, 0.5, 0, 24);
+}
+
 .root {
-    -fx-font-family: "Segoe UI", "Arial", sans-serif;
-    -fx-background-color: linear-gradient(from 0% 0% to 100% 100%, #667eea 0%, #764ba2 100%);
-    -fx-font-size: 14px;
+    /* Default font and background for the application */
+    -fx-font-family: -font-family-primary;
+    -fx-background-color: -background-color;
+    -fx-font-size: -font-size-medium;
+}
+
+/* === Base Body Style (Applied to .page-container or similar top-level layout pane) === */
+.body { /* General body styling, can be applied to a top-level pane */
+    -fx-background-color: -background-color;
+    -fx-text-fill: -text-primary-color; /* Default text color for the app */
 }
 
 /* === Page Container === */
 .page-container {
-    -fx-background-color: #f8f9fa;
-    -fx-padding: 30px;
+    -fx-background-color: -surface-color; /* Use surface color for the page background */
+    -fx-padding: -spacing-large; /* Consistent padding */
     -fx-alignment: top-center;
-    -fx-spacing: 25px;
+    -fx-spacing: -spacing-large; /* Consistent spacing between elements */
 }
 
 .espace-utilisateur-container {
-    -fx-background-color: linear-gradient(from 0% 0% to 100% 100%, #f5f7fa 0%, #c3cfe2 100%);
+    /* Replacing gradient with a solid, modern color, perhaps a slightly different shade of surface or background */
+    -fx-background-color: -surface-color; /* Or consider -background-color) if needs to be distinct */
+    /* Additional styling if needed, like padding or borders */
+    -fx-padding: -spacing-medium;
 }
 
-/* === Titre Principal === */
+/* === Titre Principal (Main Title) === */
 .main-title {
-    -fx-font-size: 2.5em;
-    -fx-font-weight: normal;
-    -fx-text-fill: #212529;
-    -fx-padding: 0 0 24px 0;
-    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.1), 2, 0.0, 0, 1);
+    -fx-font-size: -font-size-headline; /* Use headline size for main titles */
+    -fx-font-weight: normal; /* Or bold, depending on Google's guidelines, often normal or medium */
+    -fx-text-fill: -text-primary-color;
+    -fx-padding: 0 0 -spacing-large 0; /* Bottom padding */
+    -fx-effect: -shadow-dp1; /* Subtle shadow */
 }
 
 /* === Section Cards Modernes === */
 .section-box {
-    -fx-background-color: #ffffff;
-    -fx-background-radius: 16px;
-    -fx-border-radius: 16px;
-    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.1), 12, 0.4, 0, 0);
-    -fx-padding: 32px;
-    -fx-spacing: 16px;
-    -fx-alignment: center-left;
-    -fx-max-width: 600px;
-    -fx-border-color: rgba(255, 255, 255, 0.8);
+    -fx-background-color: -surface-color; /* Use surface color for cards */
+    -fx-background-radius: -border-radius-large; /* Consistent border radius */
+    -fx-border-radius: -border-radius-large;
+    -fx-effect: -shadow-dp2; /* Softer, more modern shadow */
+    -fx-padding: -spacing-xlarge; /* Consistent padding */
+    -fx-spacing: -spacing-medium; /* Consistent spacing for content within the box */
+    -fx-alignment: center-left; /* Or as needed by content */
+    -fx-max-width: 600px; /* Retain max-width or make it variable/percentage based */
+    /* Consider removing the border or making it very subtle if shadows are used */
+    -fx-border-color: transparent; /* Or -secondary-light-color) for a subtle border */
     -fx-border-width: 1px;
 }
 
 .section-box:hover {
-    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.15), 20, 0.6, 0, 2);
+    -fx-effect: -shadow-dp4; /* Slightly more pronounced shadow on hover */
 }
 
 .section-title {
-    -fx-font-size: 1.4em;
-    -fx-font-weight: bold;
-    -fx-text-fill: #212529;
-    -fx-padding: 0 0 8px 0;
+    -fx-font-size: -font-size-title; /* Use title size for section titles */
+    -fx-font-weight: bold; /* Or normal, depending on desired emphasis */
+    -fx-text-fill: -text-primary-color;
+    -fx-padding: 0 0 -spacing-small 0; /* Bottom padding */
 }
 
 .field-label {
-    -fx-font-size: 1em;
-    -fx-text-fill: #6c757d;
-    -fx-font-weight: normal;
-    -fx-padding: 4px 0;
+    -fx-font-size: -font-size-medium; /* Base font size for labels */
+    -fx-text-fill: -text-secondary-color; /* Secondary text color for labels */
+    -fx-font-weight: normal; /* Normal weight for labels */
+    -fx-padding: -spacing-xxsmall 0; /* Small padding */
 }
 
-/* === Champs de Saisie Modernes === */
-.styled-text-field, .modern-text-field {
-    -fx-background-color: #ffffff;
-    -fx-border-color: #e9ecef;
-    -fx-border-width: 2px;
-    -fx-border-radius: 12px;
-    -fx-background-radius: 12px;
-    -fx-padding: 16px 24px;
-    -fx-font-size: 1em;
-    -fx-prompt-text-fill: #9ca3af;
-    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.1), 3, 0.2, 0, 1);
-    -fx-pref-height: 45px;
+/* === Champs de Saisie Modernes (Text Fields & Text Areas) === */
+.styled-text-field, .modern-text-field, #txtLogin, #txtPassword, #txtIpServeur {
+    -fx-background-color: -background-color; /* Fields typically on base background */
+    -fx-border-color: -secondary-light-color; /* Subtle border */
+    -fx-border-width: 1px; /* Thinner border for a modern look */
+    -fx-border-radius: -border-radius-medium;
+    -fx-background-radius: -border-radius-medium;
+    -fx-padding: -spacing-small -spacing-medium; /* Adjusted padding */
+    -fx-font-size: -font-size-medium;
+    -fx-prompt-text-fill: -text-secondary-color; /* Use secondary text color for prompt */
+    -fx-text-fill: -text-primary-color; /* Text color when typing */
+    -fx-effect: -shadow-dp1; /* Very subtle shadow, or none for a flatter look */
+    -fx-pref-height: 40px; /* Adjust height to content + padding, or specific value */
 }
 
 .styled-text-field:focused, .modern-text-field:focused {
-    -fx-border-color: #5b5fc7;
-    -fx-effect: dropshadow(gaussian, #5b5fc7, 8, 0.3, 0, 0);
-    -fx-background-color: #ffffff;
+    -fx-border-color: -primary-color; /* Highlight with primary color on focus */
+
+    -fx-background-color: -background-color;
 }
 
 .modern-text-area {
-    -fx-background-color: #ffffff;
-    -fx-border-color: #e9ecef;
-    -fx-border-radius: 12px;
-    -fx-background-radius: 12px;
-    -fx-padding: 16px;
-    -fx-font-size: 1em;
-    -fx-prompt-text-fill: #9ca3af;
-    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.1), 3, 0.2, 0, 1);
+    -fx-background-color: -background-color;
+    -fx-border-color: -secondary-light-color;
+    -fx-border-width: 1px;
+    -fx-border-radius: -border-radius-medium;
+    -fx-background-radius: -border-radius-medium;
+    -fx-padding: -spacing-small; /* Consistent padding */
+    -fx-font-size: -font-size-medium;
+    -fx-prompt-text-fill: -text-secondary-color;
+    -fx-text-fill: -text-primary-color;
+    -fx-effect: -shadow-dp1;
+    -fx-wrap-text: true; /* Ensure text area wraps text */
 }
 
 .modern-text-area:focused {
-    -fx-border-color: #5b5fc7;
-    -fx-effect: dropshadow(gaussian, #5b5fc7, 8, 0.3, 0, 0);
+    -fx-border-color: -primary-color;
+    
 }
 
 /* === Boutons Modernes === */
 .primary-button, .modern-primary-button {
-    -fx-background-color: linear-gradient(from 0% 0% to 100% 100%, #5b5fc7 0%, #4a4fb0 100%);
-    -fx-text-fill: #ffffff;
+    -fx-background-color: -primary-color; /* Solid primary color */
+    -fx-text-fill: -text-on-primary-color;
     -fx-font-weight: bold;
-    -fx-font-size: 1em;
-    -fx-border-radius: 12px;
-    -fx-background-radius: 12px;
-    -fx-padding: 16px 32px;
-    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.15), 8, 0.4, 0, 2);
-    -fx-min-width: 180px;
-    -fx-min-height: 45px;
+    -fx-font-size: -font-size-medium;
+    -fx-border-radius: -border-radius-medium; /* Consistent border radius */
+    -fx-background-radius: -border-radius-medium;
+    -fx-padding: -spacing-small -spacing-large; /* Adjusted padding */
+    -fx-effect: -shadow-dp2; /* Standard shadow */
+    -fx-min-width: 150px; /* Adjust as needed, or remove for auto-sizing */
+    -fx-min-height: 40px; /* Adjust as needed */
     -fx-cursor: hand;
+    /* Consider adding a subtle transition for hover effects */
+    /* -fx-transition: -fx-background-color 0.2s ease-in-out, -fx-effect 0.2s ease-in-out; */
 }
 
 .primary-button:hover, .modern-primary-button:hover {
-    -fx-background-color: linear-gradient(from 0% 0% to 100% 100%, #4a4fb0 0%, #3d4296 100%);
-    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.25), 12, 0.6, 0, 4);
+    -fx-background-color: -primary-dark-color; /* Darken on hover */
+    -fx-effect: -shadow-dp4; /* More pronounced shadow on hover */
 }
 
 .primary-button:pressed, .modern-primary-button:pressed {
-    -fx-background-color: #3d4296;
-    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.1), 4, 0.2, 0, 1);
+    -fx-background-color: -primary-dark-color; /* Can be same as hover or even darker */
+    -fx-effect: -shadow-dp1; /* Less shadow when pressed */
 }
 
 .modern-secondary-button {
-    -fx-background-color: transparent;
-    -fx-text-fill: #6c757d;
-    -fx-border-color: #e9ecef;
-    -fx-border-width: 2px;
-    -fx-border-radius: 12px;
-    -fx-background-radius: 12px;
-    -fx-padding: 16px 32px;
-    -fx-font-weight: normal;
-    -fx-min-width: 120px;
-    -fx-min-height: 45px;
+    -fx-background-color: transparent; /* Or -surface-color) for a filled look */
+    -fx-text-fill: -primary-color; /* Text color matches primary for outline buttons */
+    -fx-border-color: -primary-color; /* Border color matches primary */
+    -fx-border-width: 1px; /* Standard border width */
+    -fx-border-radius: -border-radius-medium;
+    -fx-background-radius: -border-radius-medium;
+    -fx-padding: -spacing-small -spacing-large;
+    -fx-font-weight: bold; /* Or normal */
+    -fx-font-size: -font-size-medium;
+    -fx-min-width: 150px;
+    -fx-min-height: 40px;
     -fx-cursor: hand;
+    /* -fx-transition: -fx-background-color 0.2s ease-in-out, -fx-text-fill 0.2s ease-in-out; */
 }
 
 .modern-secondary-button:hover {
-    -fx-background-color: #f8f9fa;
-    -fx-border-color: #6c757d;
-    -fx-text-fill: #212529;
+    -fx-background-color: -primary-color; /* Fill with primary color on hover */
+    -fx-text-fill: -text-on-primary-color; /* Text becomes inverse */
+    -fx-border-color: -primary-color; /* Border matches primary */
+    -fx-effect: -shadow-dp2;
+}
+
+.modern-secondary-button:pressed {
+    -fx-background-color: -primary-dark-color;
+    -fx-text-fill: -text-on-primary-color;
+    -fx-effect: -shadow-dp1;
 }
 
 /* === Dialogues Modernes === */
-.modern-dialog {
-    -fx-background-color: #ffffff;
-    -fx-background-radius: 24px;
-    -fx-border-radius: 24px;
-    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.2), 25, 0.8, 0, 0);
-    -fx-padding: 0;
+.modern-dialog { /* This class might be applied to the DialogPane itself or a wrapper */
+    -fx-background-color: -surface-color; /* Dialogs use surface color */
+    -fx-background-radius: -border-radius-large; /* Larger radius for dialogs */
+    -fx-border-radius: -border-radius-large;
+    -fx-effect: -shadow-dp8; /* More significant shadow for dialogs (modal elevation) */
+    -fx-padding: 0; /* Padding is often handled by DialogPane's content area */
 }
 
 .modern-dialog .dialog-pane {
-    -fx-background-color: #ffffff;
-    -fx-background-radius: 24px;
-    -fx-border-radius: 24px;
-    -fx-border-color: transparent;
+    -fx-background-color: transparent; /* DialogPane itself should be transparent if .modern-dialog is the styled wrapper */
+    -fx-background-radius: -border-radius-large;
+    -fx-border-radius: -border-radius-large;
+    -fx-border-color: transparent; /* No border on the pane itself */
+    /* Padding and header/content styling is often done via .dialog-pane .header-panel and .dialog-pane .content */
 }
 
-.dialog-container {
-    -fx-background-color: #ffffff;
-    -fx-spacing: 24px;
-    -fx-padding: 32px;
+.dialog-container { /* A custom class for the main content holder within a dialog */
+    -fx-background-color: -surface-color; /* Or -background-color if dialog is on a different surface */
+    -fx-spacing: -spacing-large;
+    -fx-padding: -spacing-xlarge; /* Generous padding for dialog content */
 }
 
 .dialog-section-title {
-    -fx-font-size: 1.3em;
+    -fx-font-size: -font-size-title; /* Consistent title sizing */
     -fx-font-weight: bold;
-    -fx-text-fill: #5b5fc7;
-    -fx-padding: 16px 0 8px 0;
+    -fx-text-fill: -primary-color; /* Use primary color for emphasis */
+    -fx-padding: -spacing-medium 0 -spacing-small 0;
 }
 
-.form-section {
-    -fx-background-color: rgba(248, 249, 250, 0.5);
-    -fx-background-radius: 12px;
-    -fx-border-radius: 12px;
-    -fx-padding: 24px;
-    -fx-spacing: 16px;
-    -fx-border-color: rgba(233, 236, 239, 0.8);
+.form-section { /* Used for grouping form elements within a dialog or page */
+    -fx-background-color: -background-color; /* Slightly different background for visual grouping */
+    -fx-background-radius: -border-radius-medium;
+    -fx-border-radius: -border-radius-medium;
+    -fx-padding: -spacing-large;
+    -fx-spacing: -spacing-medium;
+    -fx-border-color: -secondary-light-color; /* Subtle border */
     -fx-border-width: 1px;
 }
 
-.field-group {
-    -fx-spacing: 8px;
+.field-group { /* For spacing individual form fields */
+    -fx-spacing: -spacing-small;
 }
 
-.dialog-scroll {
+.dialog-scroll { /* Styling for ScrollPane within dialogs */
     -fx-background-color: transparent;
     -fx-border-color: transparent;
-    -fx-background-radius: 12px;
+    -fx-background-radius: -border-radius-medium; /* Match parent containers if visible */
 }
 
 .dialog-scroll .viewport {
@@ -199,479 +283,598 @@
 
 .dialog-scroll .content {
     -fx-background-color: transparent;
+    -fx-padding: -spacing-small; /* Add some padding if content touches edges */
 }
 
-/* === ComboBox et Spinner Modernes === */
-.modern-combo-box {
-    -fx-background-color: #ffffff;
-    -fx-border-color: #e9ecef;
-    -fx-border-width: 2px;
-    -fx-border-radius: 12px;
-    -fx-background-radius: 12px;
-    -fx-padding: 8px 16px;
-    -fx-font-size: 1em;
-    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.1), 3, 0.2, 0, 1);
-    -fx-min-height: 40px;
+/* === ComboBox, DatePicker, Spinner Modernes === */
+.modern-combo-box, .modern-date-picker, .modern-spinner {
+    -fx-background-color: -background-color;
+    -fx-border-color: -secondary-light-color; /* Subtle border */
+    -fx-border-width: 1px;
+    -fx-border-radius: -border-radius-medium;
+    -fx-background-radius: -border-radius-medium;
+    -fx-padding: -spacing-xsmall -spacing-medium; /* Adjusted padding */
+    -fx-font-size: -font-size-medium;
+    -fx-text-fill: -text-primary-color;
+    -fx-effect: -shadow-dp1; /* Subtle shadow */
+    -fx-min-height: 38px; /* Consistent height */
+    -fx-pref-height: 38px;
 }
 
-.modern-combo-box:focused {
-    -fx-border-color: #5b5fc7;
-    -fx-effect: dropshadow(gaussian, #5b5fc7, 6, 0.3, 0, 0);
+.modern-combo-box:focused, .modern-date-picker:focused, .modern-spinner:focused {
+    -fx-border-color: -primary-color;
 }
 
+/* ComboBox specific dropdown list styling */
 .modern-combo-box .list-cell {
-    -fx-padding: 8px 16px;
-    -fx-font-size: 0.95em;
+    -fx-padding: -spacing-xsmall -spacing-medium;
+    -fx-font-size: -font-size-medium; /* Ensure consistent font size */
+    -fx-text-fill: -text-primary-color;
+    -fx-background-color: transparent; /* Cells inherit ComboBox popup background */
 }
 
 .modern-combo-box .list-cell:hover {
-    -fx-background-color: #f8f9fa;
+    -fx-background-color: -secondary-light-color; /* Subtle hover effect */
+    -fx-text-fill: -text-primary-color;
 }
 
-.modern-date-picker {
-    -fx-background-color: #ffffff;
-    -fx-border-color: #e9ecef;
-    -fx-border-width: 2px;
-    -fx-border-radius: 12px;
-    -fx-background-radius: 12px;
-    -fx-padding: 8px 16px;
-    -fx-font-size: 1em;
-    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.1), 3, 0.2, 0, 1);
-    -fx-min-height: 40px;
+.modern-combo-box .list-cell:filled:selected, .modern-combo-box .list-cell:filled:selected:hover {
+    -fx-background-color: -primary-color;
+    -fx-text-fill: -text-on-primary-color;
 }
 
-.modern-date-picker:focused {
-    -fx-border-color: #5b5fc7;
-    -fx-effect: dropshadow(gaussian, #5b5fc7, 6, 0.3, 0, 0);
+/* DatePicker specific popup styling */
+.modern-date-picker .date-picker-popup {
+    -fx-border-color: -secondary-light-color;
+    -fx-effect: -shadow-dp4; /* Popup should have a bit more shadow */
 }
 
-.modern-spinner {
-    -fx-background-color: #ffffff;
-    -fx-border-color: #e9ecef;
-    -fx-border-width: 2px;
-    -fx-border-radius: 12px;
-    -fx-background-radius: 12px;
-    -fx-font-size: 1em;
-    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.1), 3, 0.2, 0, 1);
-    -fx-min-height: 40px;
+.modern-date-picker .date-picker-popup .month-year-pane {
+    -fx-background-color: -primary-color;
 }
 
-.modern-spinner:focused {
-    -fx-border-color: #5b5fc7;
-    -fx-effect: dropshadow(gaussian, #5b5fc7, 6, 0.3, 0, 0);
+.modern-date-picker .date-picker-popup .month-year-pane .label {
+    -fx-text-fill: -text-on-primary-color;
+}
+
+.modern-date-picker .date-picker-popup .spinner .button .left-arrow,
+.modern-date-picker .date-picker-popup .spinner .button .right-arrow {
+    -fx-background-color: -text-on-primary-color; /* Make arrows visible on primary color */
+}
+
+.modern-date-picker .date-picker-popup .day-cell:hover {
+    -fx-background-color: -secondary-light-color;
+}
+
+.modern-date-picker .date-picker-popup .day-cell.selected {
+    -fx-background-color: -primary-color;
+    -fx-text-fill: -text-on-primary-color;
+}
+
+/* Spinner specific button styling (arrows) */
+.modern-spinner .increment-arrow-button, .modern-spinner .decrement-arrow-button {
+    -fx-background-color: -surface-color; /* Or transparent */
+    -fx-background-radius: -border-radius-small;
+    -fx-padding: -spacing-xxsmall;
+}
+
+.modern-spinner .increment-arrow-button:hover, .modern-spinner .decrement-arrow-button:hover {
+    -fx-background-color: -secondary-light-color;
+}
+
+.modern-spinner .increment-arrow, .modern-spinner .decrement-arrow {
+    -fx-background-color: -text-secondary-color; /* Color of the arrow shape */
 }
 
 /* === Validation et Erreurs === */
 .error-field {
-    -fx-border-color: #dc3545 !important;
-    -fx-border-width: 2px;
-    -fx-effect: dropshadow(gaussian, #dc3545, 8, 0.4, 0, 0);
+    -fx-border-color: -error-color !important; /* Use error color for border */
+    -fx-border-width: 1px; /* Consistent border width */
+ 
 }
 
-.required-field {
-    -fx-border-color: rgba(91, 95, 199, 0.3);
+.required-field { /* Style for indicating a field is required, often a subtle cue */
+    /* Example: a light border or an asterisk, usually handled by label decorators */
+    /* For border indication (if not using labels): */
+    /* -fx-border-color: -primary-color; */
+    /* -fx-border-width: 1px; */
+    /* This might be better handled with a visual cue next to the label */
 }
 
 .error-tooltip {
-    -fx-background-color: #dc3545;
-    -fx-text-fill: #ffffff;
-    -fx-background-radius: 6px;
-    -fx-border-radius: 6px;
-    -fx-font-size: 0.9em;
-    -fx-padding: 8px 16px;
-    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.15), 8, 0.4, 0, 2);
+    -fx-background-color: -error-color;
+    -fx-text-fill: -text-on-error-color;
+    -fx-background-radius: -border-radius-small;
+    -fx-border-radius: -border-radius-small;
+    -fx-font-size: -font-size-small;
+    -fx-padding: -spacing-xsmall -spacing-small;
+    -fx-effect: -shadow-dp2;
 }
 
 /* === Alertes Modernes === */
 .modern-alert {
-    -fx-background-color: #ffffff;
-    -fx-background-radius: 16px;
-    -fx-border-radius: 16px;
-    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.2), 25, 0.8, 0, 0);
+    -fx-background-color: -surface-color;
+    -fx-background-radius: -border-radius-medium;
+    -fx-border-radius: -border-radius-medium;
+    -fx-effect: -shadow-dp6;
+}
+
+.modern-alert .dialog-pane {
+    -fx-background-color: -surface-color;
+    -fx-background-radius: -border-radius-medium;
+    -fx-border-radius: -border-radius-medium;
+    -fx-border-color: transparent;
+    -fx-border-width: 0px;
 }
 
 .modern-alert .header-panel {
     -fx-background-color: transparent;
-    -fx-padding: 24px 24px 0 24px;
+    -fx-padding: -spacing-medium -spacing-medium 0 -spacing-medium;
 }
 
-.modern-alert .content {
-    -fx-padding: 16px 24px 24px 24px;
-    -fx-font-size: 1.1em;
-    -fx-text-fill: #212529;
+.modern-alert .header-panel .label {
+    -fx-font-size: -font-size-title;
+    -fx-font-weight: bold;
+    -fx-text-fill: -text-primary-color;
+}
+
+.modern-alert .content.label { /* If content is just a label */
+    -fx-font-size: -font-size-medium;
+    -fx-text-fill: -text-secondary-color;
+    -fx-padding: -spacing-small -spacing-medium -spacing-medium -spacing-medium;
+    -fx-wrap-text: true;
+}
+
+.modern-alert .button-bar {
+    -fx-padding: -spacing-medium;
+    -fx-spacing: -spacing-small;
+}
+
+/* Specific alert types - colors can be applied to header or icons */
+.modern-alert.information .header-panel {
+    /* -fx-background-color: -primary-color; /* Or use an icon */
+}
+
+.modern-alert.warning .header-panel {
+    /* -fx-background-color: #ffc107; /* Example: Amber */
+}
+
+.modern-alert.error .header-panel {
+    /* -fx-background-color: -error-color; */
+}
+
+.modern-alert.confirmation .header-panel {
+    /* -fx-background-color: #4caf50; /* Example: Green */
 }
 
 /* === Loading Dialog === */
-.loading-dialog {
-    -fx-background-color: #ffffff;
-    -fx-background-radius: 16px;
-    -fx-border-radius: 16px;
-    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.15), 12, 0.6, 0, 2);
-    -fx-min-width: 300px;
-    -fx-min-height: 150px;
+.loading-dialog { /* Applied to the DialogPane or a wrapper for a loading indicator */
+    -fx-background-color: -surface-color;
+    -fx-background-radius: -border-radius-medium;
+    -fx-border-radius: -border-radius-medium;
+    -fx-effect: -shadow-dp4; /* Standard shadow, less than a full dialog */
+    -fx-min-width: 250px; /* Adjust as needed */
+    -fx-min-height: 120px; /* Adjust as needed */
+    -fx-padding: -spacing-large; /* Padding for content */
+    -fx-alignment: center;
+    -fx-spacing: -spacing-medium;
 }
 
-.modern-progress {
-    -fx-progress-color: #5b5fc7;
-    -fx-pref-width: 60px;
-    -fx-pref-height: 60px;
+.modern-progress { /* For ProgressIndicator */
+    -fx-progress-color: -primary-color; /* Use primary color for progress indication */
+    -fx-pref-width: 48px; /* Standard size for progress spinners */
+    -fx-pref-height: 48px;
 }
 
 .loading-message {
-    -fx-font-size: 1.1em;
-    -fx-text-fill: #212529;
+    -fx-font-size: -font-size-medium;
+    -fx-text-fill: -text-secondary-color; /* Secondary text for less emphasis */
     -fx-font-weight: normal;
     -fx-text-alignment: center;
 }
 
-/* === Interface de Réunion Moderne === */
-.reunion-container {
-    -fx-background-color: linear-gradient(from 0% 0% to 0% 100%, #667eea 0%, #764ba2 100%);
-    -fx-spacing: 0;
+/* === Interface de Réunion Moderne (Meeting/Chat Interface) === */
+.reunion-container { /* Main container for the meeting/chat view */
+    -fx-background-color: -background-color; /* Base background */
+    -fx-spacing: 0; /* No spacing for edge-to-edge layout sections */
     -fx-padding: 0;
 }
 
-/* En-tête moderne */
+/* En-tête moderne (Header for the meeting view) */
 .reunion-header {
-    -fx-background-color: linear-gradient(from 0% 0% to 100% 0%, #5b5fc7 0%, #667eea 100%);
-    -fx-padding: 0 30px;
-    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.1), 4, 0.3, 0, 1);
+    -fx-background-color: -primary-color; /* Primary color for header */
+    -fx-padding: -spacing-small -spacing-large; /* Consistent padding */
+    -fx-effect: -shadow-dp2; /* Standard shadow for headers */
+    -fx-alignment: center-left; /* Align header items */
+}
+
+.reunion-header .label { /* Assuming labels are used in header for title etc. */
+    -fx-text-fill: -text-on-primary-color;
+    -fx-font-size: -font-size-large;
+    -fx-font-weight: bold;
 }
 
 .connectionStatus {
-    -fx-font-size: 1.1em;
-    -fx-text-fill: #dc3545;
-    -fx-padding: 5px 0 10px 0;
+    -fx-font-size: -font-size-small;
+    -fx-padding: -spacing-xsmall -spacing-medium;
     -fx-font-weight: normal;
+    -fx-border-radius: -border-radius-small;
+    -fx-background-radius: -border-radius-small;
+    -fx-text-alignment: center;
 }
 
 .connectionStatus.connected {
-    -fx-text-fill: #ffffff;
+    -fx-text-fill: -text-on-primary-color;
     -fx-background-color: #28a745;
 }
 
 .connectionStatus.disconnected {
-    -fx-text-fill: #ffffff;
-    -fx-background-color: #dc3545;
+    -fx-text-fill: -text-on-error-color;
+    -fx-background-color: -error-color;
 }
 
-/* Zone de messages style moderne */
+/* Zone de messages style moderne (Message Area) */
 .messageArea {
-    -fx-spacing: 12px;
-    -fx-padding: 20px;
-    -fx-background-color: linear-gradient(from 0% 0% to 0% 100%, #f8f9fa 0%, #e9ecef 100%);
+    -fx-spacing: -spacing-medium;
+    -fx-padding: -spacing-medium;
+    -fx-background-color: -surface-color;
 }
 
-/* Messages style Teams */
+/* Messages style Teams/Google Chat */
 .message-container {
     -fx-max-width: 80%;
-    -fx-padding: 4px 0;
+    -fx-padding: -spacing-xxsmall 0;
+}
+
+.message-bubble {
+    -fx-padding: -spacing-small -spacing-medium;
+    -fx-effect: -shadow-dp1;
+    -fx-font-size: -font-size-medium;
+    -fx-wrap-text: true;
 }
 
 .message-bubble-received {
-    -fx-background-color: #ffffff;
-    -fx-background-radius: 18px 18px 18px 4px;
-    -fx-border-radius: 18px 18px 18px 4px;
-    -fx-padding: 12px 16px;
-    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.1), 3, 0.3, 0, 1);
-    -fx-font-size: 1em;
-    -fx-text-fill: #212529;
-    -fx-wrap-text: true;
+    -fx-background-color: -background-color;
+    -fx-background-radius: -border-radius-large -border-radius-large -border-radius-large -border-radius-small;
+    -fx-border-radius: -border-radius-large -border-radius-large -border-radius-large -border-radius-small;
+    -fx-text-fill: -text-primary-color;
 }
 
 .message-bubble-sent {
-    -fx-background-color: linear-gradient(from 0% 0% to 100% 100%, #5b5fc7 0%, #4a4fb0 100%);
-    -fx-background-radius: 18px 18px 4px 18px;
-    -fx-border-radius: 18px 18px 4px 18px;
-    -fx-padding: 12px 16px;
-    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.1), 3, 0.3, 0, 1);
-    -fx-font-size: 1em;
-    -fx-text-fill: #ffffff;
-    -fx-wrap-text: true;
+    -fx-background-color: -primary-color; /* Primary color for sent messages */
+    -fx-background-radius: -border-radius-large -border-radius-large -border-radius-small -border-radius-large;
+    -fx-border-radius: -border-radius-large -border-radius-large -border-radius-small -border-radius-large;
+    -fx-text-fill: -text-on-primary-color;
 }
 
 .message-sender {
-    -fx-font-size: 0.85em;
+    -fx-font-size: -font-size-small;
     -fx-font-weight: bold;
-    -fx-text-fill: #5b5fc7;
-    -fx-padding: 0 0 3px 0;
+    -fx-text-fill: -text-secondary-color; /* Subtle color for sender name */
+    -fx-padding: 0 0 -spacing-xxsmall -spacing-xsmall; /* Padding around sender text */
 }
 
 .message-time {
-    -fx-font-size: 0.8em;
-    -fx-text-fill: #9ca3af;
-    -fx-padding: 3px 0 0 0;
+    -fx-font-size: -font-size-small;
+    -fx-text-fill: -text-secondary-color; /* Light color for timestamp */
+    -fx-padding: -spacing-xxsmall 0 0 -spacing-xsmall;
 }
 
-.system-message {
-    -fx-background-color: rgba(255, 255, 255, 0.9);
-    -fx-background-radius: 15px;
-    -fx-border-radius: 15px;
-    -fx-padding: 8px 12px;
-    -fx-font-size: 0.9em;
-    -fx-text-fill: #6c757d;
+.system-message { /* For "User joined", "User left" type messages */
+    -fx-background-color: -secondary-light-color; /* Distinct background */
+    -fx-background-radius: -border-radius-medium;
+    -fx-border-radius: -border-radius-medium;
+    -fx-padding: -spacing-xsmall -spacing-small;
+    -fx-font-size: -font-size-small;
+    -fx-text-fill: -text-secondary-color;
     -fx-font-style: italic;
     -fx-alignment: center;
-    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.1), 3, 0.2, 0, 1);
+    -fx-effect: none; /* Typically no shadow for system messages */
+    -fx-max-width: 100%; /* Allow system messages to span width */
 }
 
-/* Zone de saisie moderne */
-#inputArea {
-    -fx-background-color: rgba(255, 255, 255, 0.95);
-    -fx-padding: 20px 25px;
-    -fx-spacing: 15px;
+/* Zone de saisie moderne (Input area for typing messages) */
+#inputArea { /* HBox or similar container for text field and send button */
+    -fx-background-color: -background-color; /* White background for input area */
+    -fx-padding: -spacing-small -spacing-medium;
+    -fx-spacing: -spacing-small;
     -fx-alignment: center-left;
-    -fx-border-color: rgba(233, 236, 239, 0.8);
+    -fx-border-color: -secondary-light-color; /* Subtle top border */
     -fx-border-width: 1px 0 0 0;
+    -fx-effect: -shadow-dp1; /* Slight lift from message area */
 }
 
-#messageInput {
-    -fx-background-color: #ffffff;
-    -fx-border-color: #dee2e6;
-    -fx-border-width: 2px;
-    -fx-border-radius: 25px;
-    -fx-background-radius: 25px;
-    -fx-padding: 15px 20px;
-    -fx-font-size: 1.1em;
-    -fx-prompt-text-fill: #6c757d;
-    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.1), 3, 0.2, 0, 1);
-    -fx-min-height: 50px;
+#messageInput { /* TextField for message input */
+    -fx-background-color: -surface-color; /* Light grey for text field background */
+    -fx-border-color: -secondary-light-color;
+    -fx-border-width: 1px;
+    -fx-border-radius: -border-radius-large; /* Rounded text field */
+    -fx-background-radius: -border-radius-large;
+    -fx-padding: -spacing-small -spacing-medium;
+    -fx-font-size: -font-size-medium;
+    -fx-prompt-text-fill: -text-secondary-color;
+    -fx-text-fill: -text-primary-color;
+    -fx-effect: none; /* No shadow on the input field itself */
+    -fx-min-height: 40px; /* Consistent height */
+    -fx-pref-height: 40px;
 }
 
 #messageInput:focused {
-    -fx-border-color: #5b5fc7;
-    -fx-effect: dropshadow(gaussian, #5b5fc7, 8, 0.3, 0, 0);
+    -fx-border-color: -primary-color;
+    -fx-background-color: -background-color; /* Whiter background on focus */
 }
 
-#sendButton {
-    -fx-background-color: linear-gradient(from 0% 0% to 100% 100%, #5b5fc7 0%, #667eea 100%);
-    -fx-text-fill: #ffffff;
-    -fx-border-radius: 50%;
+#sendButton { /* Button for sending messages */
+    -fx-background-color: -primary-color;
+    -fx-text-fill: -text-on-primary-color;
+    -fx-border-radius: 50%; /* Circular button */
     -fx-background-radius: 50%;
-    -fx-min-width: 55px;
-    -fx-pref-width: 55px;
-    -fx-min-height: 55px;
-    -fx-pref-height: 55px;
-    -fx-font-size: 1.3em;
-    -fx-font-weight: bold;
-    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.2), 4, 0.3, 0, 1);
+    -fx-min-width: 44px; /* Consistent size */
+    -fx-pref-width: 44px;
+    -fx-min-height: 44px;
+    -fx-pref-height: 44px;
+    -fx-font-size: -font-size-large; /* Icon size */
+    -fx-font-weight: bold; /* If using text, or for icon font */
+    -fx-effect: -shadow-dp2;
     -fx-cursor: hand;
+    /* Assuming an icon is used. If text, padding needs adjustment. */
 }
 
 #sendButton:hover {
-    -fx-background-color: linear-gradient(from 0% 0% to 100% 100%, #4a4fb0 0%, #5b5fc7 100%);
-    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.3), 6, 0.4, 0, 2);
+    -fx-background-color: -primary-dark-color;
+    -fx-effect: -shadow-dp4;
 }
 
 #sendButton:pressed {
-    -fx-background-color: #3d4296;
-    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.15), 2, 0.2, 0, 1);
+    -fx-background-color: -primary-dark-color;
+    -fx-effect: -shadow-dp1;
 }
 
-/* Zone d'invitation */
-.invitation-area {
-    -fx-background-color: linear-gradient(from 0% 0% to 100% 100%, #fff3cd 0%, #ffeaa7 100%);
-    -fx-border-color: #f0ad4e;
+/* Zone d'invitation (Invitation Area) */
+.invitation-area { /* Container for invitation elements */
+    -fx-background-color: -surface-color; /* Use a subtle surface color */
+    -fx-border-color: -secondary-light-color; /* Top and bottom border */
     -fx-border-width: 1px 0;
-    -fx-padding: 20px 25px;
-    -fx-spacing: 15px;
+    -fx-padding: -spacing-medium -spacing-large;
+    -fx-spacing: -spacing-medium;
+    -fx-alignment: center-left;
 }
 
-.invite-button {
-    -fx-background-color: linear-gradient(from 0% 0% to 100% 100%, #17a2b8 0%, #138496 100%);
-    -fx-text-fill: #ffffff;
-    -fx-border-radius: 12px;
-    -fx-background-radius: 12px;
-    -fx-padding: 12px 20px;
+.invitation-area .label {
+    -fx-font-size: -font-size-medium;
+    -fx-text-fill: -text-secondary-color;
+}
+
+.invite-button { /* Button for sending invitations */
+    -fx-background-color: -secondary-color; /* Use secondary color or a distinct accent */
+    -fx-text-fill: -text-inverse-color; /* Text color on secondary */
+    -fx-border-radius: -border-radius-medium;
+    -fx-background-radius: -border-radius-medium;
+    -fx-padding: -spacing-small -spacing-medium;
     -fx-font-weight: bold;
-    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.1), 3, 0.2, 0, 1);
+    -fx-font-size: -font-size-medium;
+    -fx-effect: -shadow-dp1;
     -fx-cursor: hand;
 }
 
 .invite-button:hover {
-    -fx-background-color: linear-gradient(from 0% 0% to 100% 100%, #138496 0%, #0e6674 100%);
-    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.2), 6, 0.3, 0, 2);
+    -fx-background-color: #4a4e52; /* Darker shade of secondary-color for hover */
+    -fx-effect: -shadow-dp2;
 }
 
-.invite-user-field {
-    -fx-background-color: #ffffff;
-    -fx-border-color: #17a2b8;
-    -fx-border-width: 2px;
-    -fx-border-radius: 12px;
-    -fx-background-radius: 12px;
-    -fx-padding: 8px 16px;
-    -fx-font-size: 1em;
-    -fx-prompt-text-fill: #17a2b8;
-    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.1), 3, 0.2, 0, 1);
+.invite-user-field { /* TextField for entering user to invite */
+    -fx-background-color: -background-color;
+    -fx-border-color: -secondary-color; /* Border matching the button's theme */
+    -fx-border-width: 1px;
+    -fx-border-radius: -border-radius-medium;
+    -fx-background-radius: -border-radius-medium;
+    -fx-padding: -spacing-small -spacing-medium;
+    -fx-font-size: -font-size-medium;
+    -fx-prompt-text-fill: -text-secondary-color;
+    -fx-text-fill: -text-primary-color;
+    -fx-effect: -shadow-dp1;
+    -fx-pref-height: 40px;
 }
 
 .invite-user-field:focused {
-    -fx-border-color: #138496;
-    -fx-effect: dropshadow(gaussian, #17a2b8, 6, 0.3, 0, 0);
+    -fx-border-color: -primary-color; /* Focus with primary color */
+    -fx-background-color: -background-color;
+  
 }
 
-/* Scroll bars modernes */
+/* Scroll bars modernes (Google Material Design Style) */
+.scroll-bar {
+    -fx-background-color: transparent; /* Scrollbar itself is transparent */
+}
+
 .scroll-bar:vertical {
-    -fx-background-color: transparent;
-    -fx-border-color: transparent;
-    -fx-pref-width: 8px;
-}
-
-.scroll-bar:vertical .track {
-    -fx-background-color: rgba(0,0,0,0.1);
-    -fx-background-radius: 4px;
-}
-
-.scroll-bar:vertical .thumb {
-    -fx-background-color: rgba(0,0,0,0.3);
-    -fx-background-radius: 4px;
-}
-
-.scroll-bar:vertical .thumb:hover {
-    -fx-background-color: rgba(0,0,0,0.5);
+    -fx-pref-width: -spacing-small; /* Thinner scrollbar */
+    -fx-padding: -spacing-xxsmall;
 }
 
 .scroll-bar:horizontal {
+    -fx-pref-height: -spacing-small; /* Thinner scrollbar */
+    -fx-padding: -spacing-xxsmall;
+}
+
+.scroll-bar .track {
+    -fx-background-color: -secondary-light-color; /* Light track color */
+    -fx-border-color: transparent;
+    -fx-background-radius: -border-radius-large; /* Rounded track */
+    -fx-border-radius: -border-radius-large;
+}
+
+.scroll-bar .thumb {
+    -fx-background-color: -secondary-color; /* Thumb is darker grey */
+    -fx-background-radius: -border-radius-large; /* Rounded thumb */
+    -fx-background-insets: 0; /* No insets for a cleaner look */
+}
+
+.scroll-bar .thumb:hover {
+    -fx-background-color: #70757a; /* Slightly darker grey on hover */
+}
+
+.scroll-bar .increment-button, .scroll-bar .decrement-button {
     -fx-background-color: transparent;
     -fx-border-color: transparent;
-    -fx-pref-height: 8px;
+    -fx-padding: 0; /* Remove padding from buttons */
+    -fx-pref-width: 0; /* Hide buttons by making them zero-size */
+    -fx-pref-height: 0;
 }
 
-.scroll-bar:horizontal .track {
-    -fx-background-color: rgba(0,0,0,0.1);
-    -fx-background-radius: 4px;
+.scroll-bar .increment-arrow, .scroll-bar .decrement-arrow {
+    -fx-shape: ""; /* Hide arrows */
+    -fx-padding: 0;
 }
 
-.scroll-bar:horizontal .thumb {
-    -fx-background-color: rgba(0,0,0,0.3);
-    -fx-background-radius: 4px;
-}
-
-.scroll-bar:horizontal .thumb:hover {
-    -fx-background-color: rgba(0,0,0,0.5);
-}
 
 /* === Authentification === */
-.auth-container {
+.auth-container { /* Container for login/auth elements */
     -fx-alignment: center;
-    -fx-border-color: #dddddd;
+    -fx-background-color: -surface-color; /* Use surface for distinct section */
+    -fx-padding: -spacing-xlarge;
+    -fx-spacing: -spacing-large;
+    -fx-border-color: -secondary-light-color;
     -fx-border-width: 1px;
-    -fx-border-radius: 8px;
-    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.08), 15, 0.6, 0, 0);
+    -fx-border-radius: -border-radius-medium;
+    -fx-effect: -shadow-dp3; /* Standard shadow for a contained section */
+    -fx-max-width: 400px; /* Limit width for auth forms */
 }
 
-#txtLogin, #txtPassword {
-    -fx-max-width: 300px;
+#txtLogin:focused, #txtPassword:focused, #txtIpServeur:focused {
+    -fx-border-color: -primary-color;
 }
 
-#connexion {
-    -fx-background-color: #3498db;
-    -fx-pref-height: 45px;
-    -fx-font-size: 1.1em;
-    -fx-min-width: 200px;
-}
-
-#connexion:hover {
-    -fx-background-color: #2980b9;
-}
-
-#connexion:pressed {
-    -fx-background-color: #1f618d;
-}
-
-/* === Connexion Serveur === */
-.connexion-container {
-    -fx-alignment: center;
-    -fx-spacing: 20px;
-    -fx-border-color: #dddddd;
-    -fx-border-width: 1px;
-    -fx-border-radius: 8px;
-    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.08), 15, 0.6, 0, 0);
-}
-
-.connexion-container .ip-label {
-    -fx-font-size: 1em;
-    -fx-text-fill: #555555;
-    -fx-padding: 10px 0 5px 0;
-}
-
-#txtIpServeur {
-    -fx-max-width: 300px;
-}
-
-#btnConnexionServeur {
-    -fx-pref-height: 45px;
-    -fx-background-color: #27ae60;
-    -fx-text-fill: white;
+/* Apply modern primary button styles to #connexion, #btnConnexionServeur */
+#connexion, #btnConnexionServeur {
+    /* These will inherit .modern-primary-button or .primary-button if applied in FXML */
+    /* Assuming .primary-button is applied or duplicate styles: */
+    -fx-background-color: -primary-color;
+    -fx-text-fill: -text-on-primary-color;
     -fx-font-weight: bold;
-    -fx-font-size: 1.1em;
-    -fx-border-radius: 25px;
-    -fx-background-radius: 25px;
-    -fx-padding: 0 30px;
-    -fx-min-width: 200px;
-    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.15), 5, 0.2, 0, 1);
-}
-
-#btnConnexionServeur:hover {
-    -fx-background-color: #229954;
-    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.25), 8, 0.4, 0, 2);
+    -fx-font-size: -font-size-medium;
+    -fx-border-radius: -border-radius-medium;
+    -fx-background-radius: -border-radius-medium;
+    -fx-padding: -spacing-small -spacing-large;
+    -fx-effect: -shadow-dp2;
+    -fx-min-height: 40px;
+    -fx-min-width: 180px; /* Adjusted min-width */
     -fx-cursor: hand;
 }
 
-#btnConnexionServeur:pressed {
-    -fx-background-color: #1e8449;
-    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.1), 3, 0.1, 0, 0);
+#connexion:hover, #btnConnexionServeur:hover {
+    -fx-background-color: -primary-dark-color;
+    -fx-effect: -shadow-dp4;
 }
 
-/* === Espace Administrateur === */
-.espace-administrateur-container {
-    -fx-background-color: #e8eaed;
-    -fx-min-height: 500px;
+#connexion:pressed, #btnConnexionServeur:pressed {
+    -fx-background-color: -primary-dark-color;
+    -fx-effect: -shadow-dp1;
+}
+
+/* Specific for #btnConnexionServeur if it needs to be different (e.g. success/green) */
+/* If #btnConnexionServeur should be green:
+#btnConnexionServeur {
+    -fx-background-color: #28a745; /* Success Green */
+/* -fx-text-fill: -text-on-primary-color; ... etc. ... */
+/* }
+#btnConnexionServeur:hover { -fx-background-color: #218838; }
+#btnConnexionServeur:pressed { -fx-background-color: #1e7e34; }
+*/
+
+/* === Connexion Serveur === */
+.connexion-container { /* Container for server connection elements */
+    -fx-alignment: center;
+    -fx-background-color: -surface-color;
+    -fxpadding: -spacing-xlarge;
+    -fx-spacing: -spacing-medium; /* Reduced spacing */
+    -fx-border-color: -secondary-light-color;
+    -fx-border-width: 1px;
+    -fx-border-radius: -border-radius-medium;
+    -fx-effect: -shadow-dp3;
+    -fx-max-width: 400px;
+}
+
+.connexion-container .ip-label { /* Label for IP input */
+    -fx-font-size: -font-size-medium;
+    -fx-text-fill: -text-secondary-color;
+    -fx-padding: -spacing-xsmall 0; /* Adjusted padding */
+}
+
+
+/* === Espace Administrateur (Admin Area) === */
+.espace-administrateur-container { /* Main container for the admin section */
+    -fx-background-color: -surface-color; /* Consistent surface color */
+    -fx-padding: -spacing-large; /* Consistent padding */
+    -fx-min-height: 500px; /* Retain or adjust as needed */
     -fx-min-width: 700px;
 }
 
 .admin-content-area {
-    -fx-background-color: #ffffff;
-    -fx-padding: 20px;
-    -fx-border-radius: 8px;
-    -fx-background-radius: 8px;
-    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.07), 12, 0.4, 0, 0);
+    -fx-background-color: -background-color;
+    -fx-padding: -spacing-large;
+    -fx-border-radius: -border-radius-medium;
+    -fx-background-radius: -border-radius-medium;
+    -fx-effect: -shadow-dp2;
     -fx-min-height: 300px;
 }
 
 .placeholder-label {
-    -fx-font-size: 1.2em;
-    -fx-text-fill: #7f8c8d;
+    -fx-font-size: -font-size-large;
+    -fx-text-fill: -text-secondary-color;
     -fx-alignment: center;
 }
 
 /* === Hover Effects === */
 .hover-scale:hover {
-    -fx-scale-x: 1.02;
-    -fx-scale-y: 1.02;
+    -fx-scale-x: 1.03;
+    -fx-scale-y: 1.03;
+}
+
+.hover-lift:hover {
+    -fx-effect: -shadow-dp6;
+    -fx-translate-y: -2px;
 }
 
 /* === Welcome Message Container === */
 .welcome-message-container {
-    -fx-background-color: linear-gradient(from 0% 0% to 100% 100%, rgba(91, 95, 199, 0.1) 0%, rgba(102, 126, 234, 0.1) 100%);
-    -fx-border-radius: 15px;
-    -fx-background-radius: 15px;
-    -fx-border-color: rgba(91, 95, 199, 0.2);
-    -fx-border-width: 1px;
-    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.1), 8, 0.3, 0, 2);
+    -fx-background-color: -primary-color;
+    -fx-text-fill: -text-on-primary-color;
+    -fx-padding: -spacing-large;
+    -fx-border-radius: -border-radius-medium;
+    -fx-background-radius: -border-radius-medium;
+    -fx-effect: -shadow-dp2;
 }
 
-/* === Progress Indicator === */
+.welcome-message-container .title {
+    -fx-font-size: -font-size-xlarge;
+    -fx-font-weight: bold;
+    -fx-text-fill: -text-on-primary-color;
+}
+
+.welcome-message-container .message {
+    -fx-font-size: -font-size-medium;
+    -fx-text-fill: -text-on-primary-color;
+    -fx-wrap-text: true;
+}
+
+/* === Progress Indicator (already styled as .modern-progress) === */
 .progress-indicator {
-    -fx-progress-color: #5b5fc7;
+    -fx-progress-color: -primary-color;
 }
 
 /* === Tooltips === */
 .tooltip {
-    -fx-background-color: rgba(0, 0, 0, 0.8);
-    -fx-text-fill: white;
-    -fx-background-radius: 6px;
-    -fx-font-size: 0.9em;
-    -fx-padding: 8px 12px;
-    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.3), 4, 0.3, 0, 1);
+    -fx-background-color: -secondary-color;
+    -fx-text-fill: -text-inverse-color;
+    -fx-background-radius: -border-radius-small;
+    -fx-font-size: -font-size-small;
+    -fx-padding: -spacing-xsmall -spacing-small;
+    -fx-effect: -shadow-dp1;
+    -fx-opacity: 0.9;
+}
+
+.text-ellipsis {
+    -fx-text-overflow: ellipsis;
+    -fx-min-width: 0;
 }
