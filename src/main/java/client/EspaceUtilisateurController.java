@@ -1,22 +1,18 @@
 package client;
 
-import javafx.animation.FadeTransition;
-import javafx.animation.KeyFrame;
-import javafx.animation.Timeline;
 import javafx.application.Platform;
+import javafx.collections.FXCollections;
+import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
-import javafx.geometry.Insets;
-import javafx.geometry.Pos;
-import javafx.scene.Node;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
-import javafx.scene.layout.*;
+import javafx.scene.layout.VBox;
+import javafx.stage.Modality;
 import javafx.stage.Stage;
-import javafx.stage.StageStyle;
-import javafx.util.Duration;
 import model.Reunion;
+import org.json.JSONArray;
 import org.json.JSONObject;
 
 import java.io.IOException;
@@ -26,666 +22,507 @@ import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 
+import javafx.geometry.Insets; // Ajouté pour Dialog content padding
+
 public class EspaceUtilisateurController {
 
-    @FXML public Button btnCreerReunion;
-    @FXML public TextField txtTitreReunion;
-    @FXML public Button btnRejoindre;
     @FXML private Label welcomeLabel;
-    @FXML private VBox espaceUtilisateurRootPane;
+    @FXML
+    private Button btnCreerReunion;
+    @FXML
+    private TextField txtTitreReunion;
+    @FXML
+    private Button btnRejoindre;
+    @FXML
+    private ListView<Reunion> listeReunionsUtilisateur;
 
-    private Reunion reunion;
     private ClientWebSocket clientWebSocket;
-    private String nom;
-    private String prenom;
-    private int userId = -1;
-    
-    // Dialogue de loading moderne
+    private String nomUtilisateur;
+    private String prenomUtilisateur;
+    private int currentUserId = -1;
+
+    private final ObservableList<Reunion> reunionsObservables = FXCollections.observableArrayList();
     private Dialog<Void> loadingDialog;
+
 
     @FXML
     public void initialize() {
-        applyFadeInAnimation(espaceUtilisateurRootPane);
+        listeReunionsUtilisateur.setItems(reunionsObservables);
+        listeReunionsUtilisateur.setCellFactory(listView -> new ReunionListCell());
+        listeReunionsUtilisateur.setOnMouseClicked(event -> {
+            if (event.getClickCount() == 2) {
+                Reunion selectedReunion = listeReunionsUtilisateur.getSelectionModel().getSelectedItem();
+                if (selectedReunion != null) {
+                    rejoindreReunionParObjet(selectedReunion);
+                }
+            }
+        });
     }
 
-    private void applyFadeInAnimation(Node node) {
-        if (node != null) {
-            node.setOpacity(0.0);
-            FadeTransition fadeIn = new FadeTransition(Duration.millis(500), node);
-            fadeIn.setFromValue(0.0);
-            fadeIn.setToValue(1.0);
-            fadeIn.setDelay(Duration.millis(100));
-            fadeIn.play();
-        }
-    }
-
-    public void setUserInfo(String nom, String prenom) {
-        this.nom = nom;
-        this.prenom = prenom;
+    public void setUserInfo(String nom, String prenom, int userId) {
+        this.nomUtilisateur = nom;
+        this.prenomUtilisateur = prenom;
+        this.currentUserId = userId;
         if (welcomeLabel != null) {
-            welcomeLabel.setText("Bienvenue " + nom + " " + prenom + " 👋");
+            // Afficher seulement le prénom si disponible, sinon le nom, ou un fallback
+            String displayName = (prenom != null && !prenom.isEmpty()) ? prenom : nom;
+            if (displayName == null || displayName.isEmpty()) displayName = "Utilisateur";
+            welcomeLabel.setText(displayName); // Simplifié pour juste le prénom ou nom
         }
-    }
-
-    public void setUserInfo(String nom, String prenom, int userId, ClientWebSocket clientWebSocket) {
-        this.nom = nom;
-        this.prenom = prenom;
-        this.userId = userId;
-        this.clientWebSocket = clientWebSocket;
-        if (welcomeLabel != null) {
-            welcomeLabel.setText("Bienvenue " + nom + " " + prenom + " 👋");
-        }
+        fetchUserMeetings();
     }
 
     public void setClientWebSocket(ClientWebSocket clientWebSocket) {
         this.clientWebSocket = clientWebSocket;
-        clientWebSocket.setControllerEspc(this);
+        // Si ce contrôleur doit écouter des messages spécifiques dès son initialisation,
+        // il faut le dire à clientWebSocket
+        // if (this.clientWebSocket != null) {
+        // this.clientWebSocket.setControllerEspc(this);
+        // }
     }
 
     @FXML
-    private void handleClickJoinReunion() {
-        String titreReunion = txtTitreReunion.getText();
-        if (titreReunion == null || titreReunion.trim().isEmpty()) {
-            showModernAlert("Champ requis", "Veuillez saisir le nom ou l'ID de la réunion à rejoindre.", Alert.AlertType.WARNING);
-            return;
+    private void handleDeconnexion() {
+        System.out.println("Déconnexion demandée par l'utilisateur.");
+        if (clientWebSocket != null) {
+            clientWebSocket.deconnecter();
         }
+        try {
+            Stage stage = (Stage) welcomeLabel.getScene().getWindow();
+            FXMLLoader loader = new FXMLLoader(getClass().getResource("/connexionServeur.fxml"));
+            Parent root = loader.load();
+            AuthentificationController authController = loader.getController();
+            // Il faut une manière d'obtenir ou de recréer clientWebSocket pour le nouvel écran de connexion
+            // Pour l'instant, on suppose que ClientApplication gère une instance unique ou en crée une nouvelle.
+            ClientWebSocket newSocket = ClientApplication.getWebSocketClientInstance(); // Exemple
+            authController.setClientWebSocket(newSocket);
 
-        if (clientWebSocket == null || !clientWebSocket.isConnected()) {
-            showModernAlert("Connexion interrompue", "Impossible de rejoindre la réunion.\nVeuillez vérifier votre connexion.", Alert.AlertType.ERROR);
-            return;
+
+            Scene scene = new Scene(root);
+            stage.setScene(scene);
+            stage.setTitle("Connexion au Serveur");
+            stage.centerOnScreen();
+        } catch (IOException e) {
+            e.printStackTrace();
+            showAlert(Alert.AlertType.ERROR, "Erreur", "Impossible de retourner à l'écran de connexion.");
         }
-
-        // Afficher le loading
-        showLoadingDialog("Connexion à la réunion...");
-        rejoindreReunion(titreReunion.trim());
     }
+
+
+    @FXML
+    private void handleClickJoinReunion() {
+        String codeOuNomReunion = txtTitreReunion.getText();
+        if (codeOuNomReunion == null || codeOuNomReunion.trim().isEmpty()) {
+            showAlert(Alert.AlertType.WARNING, "Champ Requis", "Veuillez saisir le nom, l'ID ou le code de la réunion.");
+            txtTitreReunion.requestFocus();
+            return;
+        }
+        if (clientWebSocket == null || !clientWebSocket.isConnected()) {
+            showAlert(Alert.AlertType.ERROR, "Connexion Perdue", "Connexion au serveur perdue. Veuillez vous reconnecter.");
+            return;
+        }
+        showLoadingDialog("Tentative de rejoindre la réunion...");
+        JSONObject jsonRequete = new JSONObject();
+        jsonRequete.put("modele", "reunion");
+        jsonRequete.put("action", "rejoindre");
+        jsonRequete.put("code", codeOuNomReunion.trim());
+        jsonRequete.put("userId", this.currentUserId);
+        clientWebSocket.envoyerRequete(jsonRequete.toString());
+    }
+
+    private void rejoindreReunionParObjet(Reunion reunion) {
+        if (reunion == null) return;
+        System.out.println("Tentative de rejoindre la réunion : " + reunion.getNom());
+        if (clientWebSocket == null || !clientWebSocket.isConnected()) {
+            showAlert(Alert.AlertType.ERROR, "Connexion Perdue", "Connexion au serveur perdue. Veuillez vous reconnecter.");
+            return;
+        }
+        showLoadingDialog("Connexion à la réunion '" + reunion.getNom() + "'...");
+        JSONObject jsonRequete = new JSONObject();
+        jsonRequete.put("modele", "reunion");
+        jsonRequete.put("action", "rejoindre");
+        jsonRequete.put("reunionId", reunion.getId());
+        jsonRequete.put("userId", this.currentUserId);
+        clientWebSocket.envoyerRequete(jsonRequete.toString());
+    }
+
 
     @FXML
     private void handleClickCreerReunion() {
         if (clientWebSocket == null || !clientWebSocket.isConnected()) {
-            showModernAlert("Connexion interrompue", "Impossible de créer une réunion.\nVeuillez vérifier votre connexion.", Alert.AlertType.ERROR);
+            showAlert(Alert.AlertType.ERROR, "Connexion Perdue", "Impossible de créer une réunion. Veuillez vérifier votre connexion.");
             return;
         }
-
-        Dialog<Reunion> dialog = createModernReunionDialog();
-        dialog.showAndWait().ifPresent(r -> {
-            if (r != null) {
-                System.out.println("Nouvelle réunion: " + r.toString());
-                setReunion(r);
-                // showLoadingDialog("Création de la réunion..."); // Removed as per request
-                creerReunion(r);
+        Dialog<Reunion> dialog = createReunionDialog();
+        dialog.showAndWait().ifPresent(nouvelleReunion -> {
+            if (nouvelleReunion != null) {
+                System.out.println("Nouvelle réunion à créer: " + nouvelleReunion.getNom());
+                showLoadingDialog("Création de la réunion en cours...");
+                envoyerCreationReunionServeur(nouvelleReunion);
             }
         });
     }
 
-    /**
-     * 🎨 NOUVEAU: Dialogue moderne style Teams/Meet
-     */
-    private Dialog<Reunion> createModernReunionDialog() {
-        Dialog<Reunion> dialog = new Dialog<>();
-        dialog.setTitle("Nouvelle réunion");
-        dialog.setHeaderText(null);
-        
-        // Style moderne pour le dialogue
-        dialog.getDialogPane().getStylesheets().add(getClass().getResource("/styles/main.css").toExternalForm());
-        dialog.getDialogPane().getStyleClass().add("modern-dialog");
-
-        // Icône personnalisée
-        Stage stage = (Stage) dialog.getDialogPane().getScene().getWindow();
-        stage.initStyle(StageStyle.DECORATED);
-
-        // 📋 Formulaire moderne avec sections
-        VBox mainContainer = new VBox(25);
-        mainContainer.getStyleClass().add("dialog-container");
-        mainContainer.setPadding(new Insets(30));
-
-        // 🏷️ Titre de section
-        Label titleSection = new Label("📅 Détails de la réunion");
-        titleSection.getStyleClass().add("dialog-section-title");
-
-        // 📝 Champs de base
-        VBox basicInfoSection = createFormSection();
-        
-        TextField nomField = createModernTextField("Nom de la réunion", "ex: Réunion équipe projet", true);
-        TextField sujetField = createModernTextField("Sujet", "ex: Revue sprint", false);
-        TextArea agendaField = createModernTextArea("Ordre du jour", "Points à aborder...");
-        
-        basicInfoSection.getChildren().addAll(
-            createFieldGroup("📝 Nom *", nomField),
-            createFieldGroup("💭 Sujet", sujetField),
-            createFieldGroup("📋 Agenda", agendaField)
-        );
-
-        // 🕐 Section Date & Heure
-        Label scheduleSection = new Label("🕐 Planification");
-        scheduleSection.getStyleClass().add("dialog-section-title");
-
-        VBox scheduleInfoSection = createFormSection();
-        
-        DatePicker datePicker = createModernDatePicker();
-        datePicker.setValue(LocalDate.now());
-        
-        ComboBox<String> heureCombo = createTimeComboBox();
-        Spinner<Integer> dureeSpinner = createDurationSpinner();
-        
-        HBox timeBox = new HBox(15);
-        timeBox.setAlignment(Pos.CENTER_LEFT);
-        timeBox.getChildren().addAll(heureCombo, new Label("pour"), dureeSpinner, new Label("minutes"));
-        
-        scheduleInfoSection.getChildren().addAll(
-            createFieldGroup("📅 Date *", datePicker),
-            createFieldGroup("⏰ Heure et durée *", timeBox)
-        );
-
-        // 🔒 Section Type & Sécurité
-        Label securitySection = new Label("🔒 Paramètres");
-        securitySection.getStyleClass().add("dialog-section-title");
-
-        VBox securityInfoSection = createFormSection();
-        
-        ComboBox<Reunion.Type> typeComboBox = createTypeComboBox();
-        
-        securityInfoSection.getChildren().addAll(
-            createFieldGroup("🎯 Type de réunion *", typeComboBox)
-        );
-
-        // 📦 Assemblage
-        mainContainer.getChildren().addAll(
-            titleSection, basicInfoSection,
-            scheduleSection, scheduleInfoSection,
-            securitySection, securityInfoSection
-        );
-
-        ScrollPane scrollPane = new ScrollPane(mainContainer);
-        scrollPane.setFitToWidth(true);
-        scrollPane.getStyleClass().add("dialog-scroll");
-        scrollPane.setPrefSize(600, 700);
-
-        dialog.getDialogPane().setContent(scrollPane);
-
-        // 🎯 Boutons modernes
-        ButtonType creerButtonType = new ButtonType("✨ Créer la réunion", ButtonBar.ButtonData.OK_DONE);
-        ButtonType annulerButtonType = new ButtonType("❌ Annuler", ButtonBar.ButtonData.CANCEL_CLOSE);
-        dialog.getDialogPane().getButtonTypes().addAll(creerButtonType, annulerButtonType);
-
-        // Style des boutons
-        Platform.runLater(() -> {
-            Button creerBtn = (Button) dialog.getDialogPane().lookupButton(creerButtonType);
-            Button annulerBtn = (Button) dialog.getDialogPane().lookupButton(annulerButtonType);
-            
-            creerBtn.getStyleClass().addAll("modern-primary-button");
-            annulerBtn.getStyleClass().addAll("modern-secondary-button");
-        });
-
-        // 🔄 Logique de validation et création
-        dialog.setResultConverter(dialogButton -> {
-            if (dialogButton == creerButtonType) {
-                return validateAndCreateReunion(nomField, sujetField, agendaField, 
-                    datePicker, heureCombo, dureeSpinner, typeComboBox);
-            }
-            return null;
-        });
-
-        return dialog;
-    }
-
-    /**
-     * 🎨 Composants UI modernes 
-     */
-    private TextField createModernTextField(String label, String prompt, boolean required) {
-        TextField field = new TextField();
-        field.setPromptText(prompt);
-        field.getStyleClass().add("modern-text-field");
-        if (required) {
-            field.getStyleClass().add("required-field");
-        }
-        return field;
-    }
-
-    private TextArea createModernTextArea(String label, String prompt) {
-        TextArea area = new TextArea();
-        area.setPromptText(prompt);
-        area.setPrefRowCount(3);
-        area.setMaxHeight(80);
-        area.getStyleClass().add("modern-text-area");
-        return area;
-    }
-
-    private DatePicker createModernDatePicker() {
-        DatePicker picker = new DatePicker();
-        picker.getStyleClass().add("modern-date-picker");
-        return picker;
-    }
-
-    private ComboBox<String> createTimeComboBox() {
-        ComboBox<String> combo = new ComboBox<>();
-        combo.getStyleClass().add("modern-combo-box");
-        
-        // Générer les heures (8h - 22h par pas de 30min)
-        for (int h = 8; h <= 22; h++) {
-            combo.getItems().addAll(
-                String.format("%02d:00", h),
-                String.format("%02d:30", h)
-            );
-        }
-        combo.setValue("14:00");
-        combo.setEditable(false);
-        return combo;
-    }
-
-    private Spinner<Integer> createDurationSpinner() {
-        Spinner<Integer> spinner = new Spinner<>(15, 480, 60, 15);
-        spinner.setEditable(true);
-        spinner.getStyleClass().add("modern-spinner");
-        spinner.setPrefWidth(100);
-        return spinner;
-    }
-
-    private ComboBox<Reunion.Type> createTypeComboBox() {
-        ComboBox<Reunion.Type> combo = new ComboBox<>();
-        combo.getStyleClass().add("modern-combo-box");
-        combo.getItems().setAll(Reunion.Type.values());
-        combo.setValue(Reunion.Type.STANDARD);
-        
-        // Personnaliser l'affichage
-        combo.setCellFactory(listView -> new ListCell<Reunion.Type>() {
-            @Override
-            protected void updateItem(Reunion.Type item, boolean empty) {
-                super.updateItem(item, empty);
-                if (empty || item == null) {
-                    setText(null);
-                } else {
-                    switch (item) {
-                        case STANDARD -> setText("🌐 Standard - Ouverte à tous");
-                        case PRIVEE -> setText("🔒 Privée - Sur invitation");
-                        case DEMOCRATIQUE -> setText("🗳️ Démocratique - Vote participatif");
-                    }
-                }
-            }
-        });
-        
-        combo.setButtonCell(combo.getCellFactory().call(null));
-        return combo;
-    }
-
-    private VBox createFormSection() {
-        VBox section = new VBox(20);
-        section.getStyleClass().add("form-section");
-        return section;
-    }
-
-    private VBox createFieldGroup(String labelText, Node field) {
-        VBox group = new VBox(8);
-        group.getStyleClass().add("field-group");
-        
-        Label label = new Label(labelText);
-        label.getStyleClass().add("field-label");
-        
-        group.getChildren().addAll(label, field);
-        return group;
-    }
-
-    /**
-     * ✅ Validation moderne avec feedback visuel
-     */
-    private Reunion validateAndCreateReunion(TextField nomField, TextField sujetField, 
-            TextArea agendaField, DatePicker datePicker, ComboBox<String> heureCombo,
-            Spinner<Integer> dureeSpinner, ComboBox<Reunion.Type> typeComboBox) {
-        
-        try {
-            // Validation nom
-            String nom = nomField.getText();
-            if (nom == null || nom.trim().isEmpty()) {
-                highlightErrorField(nomField, "Le nom de la réunion est obligatoire");
-                return null;
-            }
-
-            // Validation date
-            LocalDate date = datePicker.getValue();
-            if (date == null) {
-                highlightErrorField(datePicker, "La date est obligatoire");
-                return null;
-            }
-
-            // Validation heure
-            String heureText = heureCombo.getValue();
-            if (heureText == null || heureText.trim().isEmpty()) {
-                highlightErrorField(heureCombo, "L'heure est obligatoire");
-                return null;
-            }
-
-            LocalTime time;
-            try {
-                time = LocalTime.parse(heureText.trim(), DateTimeFormatter.ofPattern("HH:mm"));
-            } catch (DateTimeParseException e) {
-                highlightErrorField(heureCombo, "Format d'heure invalide");
-                return null;
-            }
-
-            LocalDateTime debut = LocalDateTime.of(date, time);
-
-            // Vérification futur
-            if (debut.isBefore(LocalDateTime.now())) {
-                highlightErrorField(datePicker, "La réunion doit être programmée dans le futur");
-                return null;
-            }
-
-            // Validation durée
-            Integer duree = dureeSpinner.getValue();
-            if (duree == null || duree <= 0) {
-                highlightErrorField(dureeSpinner, "La durée doit être positive");
-                return null;
-            }
-
-            // Validation type
-            Reunion.Type type = typeComboBox.getValue();
-            if (type == null) {
-                highlightErrorField(typeComboBox, "Le type de réunion est obligatoire");
-                return null;
-            }
-
-            String sujet = sujetField.getText();
-            String agenda = agendaField.getText();
-
-            return new Reunion(
-                nom.trim(),
-                sujet != null ? sujet.trim() : "",
-                agenda != null ? agenda.trim() : "",
-                debut,
-                duree,
-                type,
-                userId > 0 ? userId : 1,
-                null
-            );
-
-        } catch (Exception e) {
-            Platform.runLater(() -> showModernAlert("Erreur", "Erreur lors de la création: " + e.getMessage(), Alert.AlertType.ERROR));
-            e.printStackTrace();
-            return null;
-        }
-    }
-
-    /**
-     * 🔴 Highlighting d'erreur moderne
-     */
-    private void highlightErrorField(Node field, String message) {
-        field.getStyleClass().add("error-field");
-        
-        // Animation shake
-        FadeTransition shake = new FadeTransition(Duration.millis(100), field);
-        shake.setFromValue(1.0);
-        shake.setToValue(0.8);
-        shake.setCycleCount(4);
-        shake.setAutoReverse(true);
-        shake.play();
-        
-        // Tooltip d'erreur
-        Tooltip tooltip = new Tooltip(message);
-        tooltip.getStyleClass().add("error-tooltip");
-        Tooltip.install(field, tooltip);
-        
-        Platform.runLater(() -> showModernAlert("Validation", message, Alert.AlertType.WARNING));
-        
-        // Retirer l'erreur après 3 secondes
-        Timeline timeline = new Timeline(new KeyFrame(Duration.seconds(3), e -> {
-            field.getStyleClass().remove("error-field");
-            Tooltip.uninstall(field, tooltip);
-        }));
-        timeline.play();
-    }
-
-    /**
-     * 💬 Alertes modernes style Teams
-     */
-    private void showModernAlert(String title, String message, Alert.AlertType type) {
-        Alert alert = new Alert(type);
-        alert.setTitle(title);
-        alert.setHeaderText(null);
-        alert.setContentText(message);
-        
-        // Style moderne
-        alert.getDialogPane().getStylesheets().add(getClass().getResource("/styles/main.css").toExternalForm());
-        alert.getDialogPane().getStyleClass().add("modern-alert");
-        
-        // Icônes personnalisées
-        String emoji = switch (type) {
-            case INFORMATION -> "ℹ️";
-            case WARNING -> "⚠️";
-            case ERROR -> "❌";
-            case CONFIRMATION -> "✅";
-            default -> throw new IllegalStateException("Unexpected value: " + type);
-        };
-        
-        alert.setTitle(emoji + " " + title);
-        alert.showAndWait();
-    }
-
-    /**
-     * ⏳ Dialogue de chargement moderne
-     */
-    private void showLoadingDialog(String message) {
-        if (loadingDialog != null) {
-            loadingDialog.close();
-        }
-        
-        loadingDialog = new Dialog<>();
-        loadingDialog.setTitle("En cours...");
-        loadingDialog.setHeaderText(null);
-        
-        // Contenu du loading
-        VBox content = new VBox(20);
-        content.setAlignment(Pos.CENTER);
-        content.setPadding(new Insets(30));
-        content.getStyleClass().add("loading-dialog");
-        
-        ProgressIndicator progress = new ProgressIndicator();
-        progress.getStyleClass().add("modern-progress");
-        
-        Label messageLabel = new Label(message);
-        messageLabel.getStyleClass().add("loading-message");
-        
-        content.getChildren().addAll(progress, messageLabel);
-        
-        loadingDialog.getDialogPane().setContent(content);
-        loadingDialog.getDialogPane().getStylesheets().add(getClass().getResource("/styles/main.css").toExternalForm());
-        loadingDialog.getDialogPane().getStyleClass().add("modern-dialog");
-        
-        // Pas de boutons
-        loadingDialog.getDialogPane().getButtonTypes().clear();
-        
-        loadingDialog.show();
-    }
-    
-    private void hideLoadingDialog() {
-        if (loadingDialog != null) {
-            loadingDialog.close();
-            loadingDialog = null;
-        }
-    }
-
-    // [Le reste des méthodes reste identique...]
-    private void creerReunion(Reunion reunion) {
-        try {
-            String jsonRequete = creerJsonCreationReunion(reunion);
-            System.out.println("JSON envoyé: " + jsonRequete);
-            clientWebSocket.envoyerRequete(jsonRequete);
-        } catch (Exception e) {
-            hideLoadingDialog();
-            System.err.println("Erreur lors de l'envoi de la création de réunion: " + e.getMessage());
-            e.printStackTrace();
-            showModernAlert("Erreur réseau", "Impossible de créer la réunion: " + e.getMessage(), Alert.AlertType.ERROR);
-        }
-    }
-
-    private String creerJsonCreationReunion(Reunion reunion) {
+    private void envoyerCreationReunionServeur(Reunion reunion) {
         JSONObject json = new JSONObject();
         json.put("modele", "reunion");
         json.put("action", "creation");
         json.put("nom", reunion.getNom());
         json.put("sujet", reunion.getSujet() != null ? reunion.getSujet() : "");
         json.put("agenda", reunion.getAgenda() != null ? reunion.getAgenda() : "");
-        json.put("debut", reunion.getDebut().toString());
+        json.put("debut", reunion.getDebut().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME));
         json.put("duree", reunion.getDuree());
         json.put("type", reunion.getType().toString());
-        json.put("idOrganisateur", reunion.getIdOrganisateur());
-        return json.toString();
+        json.put("idOrganisateur", this.currentUserId);
+        clientWebSocket.envoyerRequete(json.toString());
     }
 
-    private void rejoindreReunion(String codeReunion) {
-        try {
-            String jsonRequete = creerJsonRejoindreReunion(codeReunion);
-            clientWebSocket.envoyerRequete(jsonRequete);
-        } catch (Exception e) {
+    public void traiterReponseServeur(String message) {
+        Platform.runLater(() -> {
+            // Toujours fermer le modal de chargement en premier
             hideLoadingDialog();
-            System.err.println("Erreur lors de l'envoi de la demande de participation: " + e.getMessage());
-            showModernAlert("Erreur réseau", "Impossible de rejoindre la réunion: " + e.getMessage(), Alert.AlertType.ERROR);
-        }
-    }
-
-    private String creerJsonRejoindreReunion(String codeReunion) {
-        JSONObject json = new JSONObject();
-        json.put("modele", "reunion");
-        json.put("action", "rejoindre");
-        json.put("code", codeReunion);
-        json.put("userId", userId);
-        json.put("participant", nom + " " + prenom);
-        return json.toString();
-    }
-
-    public void traiterReponseConnexion(String message) {
-        if (message == null || message.trim().isEmpty()) {
-            System.err.println("Erreur: message WebSocket vide reçu.");
-            return;
-        }
 
         try {
             JSONObject jsonResponse = new JSONObject(message);
-            String type = jsonResponse.optString("type");
-
-            if ("welcome".equals(type)) {
-                System.out.println("Message de bienvenue reçu: " + jsonResponse.optString("message"));
-                return;
-            }
-
             String modele = jsonResponse.optString("modele");
             String action = jsonResponse.optString("action");
             String statut = jsonResponse.optString("statut");
-            String msg = jsonResponse.optString("message");
+            String msg = jsonResponse.optString("message", "Aucun message du serveur.");
 
-            Platform.runLater(() -> {
-                hideLoadingDialog(); // Cacher le loading dans tous les cas
-                
-                switch (modele) {
-                    case "reunion":
-                        handleReunionResponse(action, statut, msg, jsonResponse);
-                        break;
-                    case "authentification":
-                        break;
-                    default:
-                        if ("succes".equals(statut)) {
-                            showModernAlert("Succès", msg, Alert.AlertType.INFORMATION);
-                        } else if ("echec".equals(statut)) {
-                            showModernAlert("Échec", msg, Alert.AlertType.ERROR);
-                        }
-                        break;
-                }
-            });
-        } catch (Exception e) {
-            hideLoadingDialog();
-            System.err.println("Erreur lors du traitement de la réponse: " + e.getMessage());
-            e.printStackTrace();
-        }
-    }
+            if (!"reunion".equals(modele)) {
+                System.out.println("Message non destiné à EspaceUtilisateurController (modèle): " + modele);
+                return;
+            }
 
-    private void handleReunionResponse(String action, String statut, String message, JSONObject jsonResponse) {
-        System.out.println("Réponse réunion reçue - Action: " + action + ", Statut: " + statut);
-
-        switch (action) {
-            case "reponseCreation":
+            if ("reponseCreation".equals(action)) {
                 if ("succes".equals(statut)) {
+                    // Ne pas afficher d'alerte pour une création réussie si on va directement à la réunion
                     JSONObject reunionData = jsonResponse.optJSONObject("reunion");
                     if (reunionData != null) {
-                        int reunionId = reunionData.optInt("id");
-                        boolean autoJoin = jsonResponse.optBoolean("autoJoin", false);
-
-                        System.out.println("Réunion créée avec ID: " + reunionId);
-
-                        if (autoJoin && reunionId > 0) {
-                            showModernAlert("Réunion créée", "Votre réunion a été créée avec succès !\nRedirection en cours...", Alert.AlertType.INFORMATION);
-                            Platform.runLater(() -> {
-                                ouvrirInterfaceReunion(String.valueOf(reunionId), true);
-                            });
+                        boolean autoJoin = jsonResponse.optBoolean("autoJoin", true); // Par défaut true
+                        if (autoJoin) {
+                            int nouvelleReunionId = reunionData.optInt("id");
+                            String nomNouvelleReunion = reunionData.optString("nom");
+                            int organisateurId = reunionData.optInt("idOrganisateur", this.currentUserId);
+                            ouvrirInterfaceReunion(String.valueOf(nouvelleReunionId), nomNouvelleReunion, organisateurId, true);
                         } else {
-                            showModernAlert("Réunion créée", message + " (ID: " + reunionId + ")", Alert.AlertType.INFORMATION);
+                            showAlert(Alert.AlertType.INFORMATION, "Réunion Créée", msg);
+                            fetchUserMeetings();
                         }
                     } else {
-                        showModernAlert("Réunion créée", message, Alert.AlertType.INFORMATION);
+                        showAlert(Alert.AlertType.INFORMATION, "Réunion Créée", msg);
+                        fetchUserMeetings();
                     }
                 } else {
-                    showModernAlert("Erreur de création", message, Alert.AlertType.ERROR);
+                    showAlert(Alert.AlertType.ERROR, "Erreur de Création", msg);
                 }
-                break;
-
-            case "reponseRejoindre":
+            } else if ("reponseRejoindre".equals(action)) {
                 if ("succes".equals(statut)) {
-                    showModernAlert("Succès", "Vous avez rejoint la réunion !", Alert.AlertType.INFORMATION);
                     txtTitreReunion.clear();
-
                     int reunionId = jsonResponse.optInt("reunionId", -1);
+                    String nomReunion = jsonResponse.optString("nomReunion", "Réunion " + reunionId);
+                    int organisateurId = jsonResponse.optInt("organisateurId", -1);
                     if (reunionId != -1) {
-                        ouvrirInterfaceReunion(String.valueOf(reunionId));
+                        ouvrirInterfaceReunion(String.valueOf(reunionId), nomReunion, organisateurId, false);
+                    } else {
+                        showAlert(Alert.AlertType.ERROR, "Erreur", "ID de réunion invalide reçu du serveur.");
                     }
                 } else {
-                    showModernAlert("Impossible de rejoindre", message, Alert.AlertType.ERROR);
+                    showAlert(Alert.AlertType.ERROR, "Impossible de Rejoindre", msg);
                 }
-                break;
-
-            default:
+            } else if ("listeReunionsUtilisateur".equals(action) || "reponseGetReunionsUtilisateur".equals(action)) {
                 if ("succes".equals(statut)) {
-                    showModernAlert("Information", message, Alert.AlertType.INFORMATION);
+                    JSONArray reunionsArray = jsonResponse.optJSONArray("reunions");
+                    parseAndDisplayUserMeetings(reunionsArray);
                 } else {
-                    showModernAlert("Erreur", message, Alert.AlertType.ERROR);
+                    showAlert(Alert.AlertType.ERROR, "Erreur de Chargement", "Impossible de charger vos réunions: " + msg);
+                    listeReunionsUtilisateur.setPlaceholder(new Label("Erreur lors du chargement des réunions."));
                 }
-                break;
+            }
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            showAlert(Alert.AlertType.ERROR, "Erreur", "Erreur lors du traitement de la réponse du serveur: " + e.getMessage());
+        }
+        });
+    }
+
+    private void fetchUserMeetings() {
+        if (clientWebSocket != null && clientWebSocket.isConnected() && currentUserId != -1) {
+            JSONObject request = new JSONObject();
+            request.put("modele", "reunion");
+            request.put("action", "getReunionsUtilisateur");
+            request.put("userId", currentUserId);
+            clientWebSocket.envoyerRequete(request.toString());
+            listeReunionsUtilisateur.setPlaceholder(new Label("Chargement de vos réunions..."));
+        } else {
+            System.out.println("Impossible de charger les réunions : client non connecté ou ID utilisateur manquant.");
+            listeReunionsUtilisateur.setPlaceholder(new Label("Non connecté ou ID utilisateur non défini."));
         }
     }
 
-    private void ouvrirInterfaceReunion(String reunionId, boolean isCreator) {
+    private void parseAndDisplayUserMeetings(JSONArray reunionsArray) {
+        reunionsObservables.clear();
+        if (reunionsArray != null) {
+            for (int i = 0; i < reunionsArray.length(); i++) {
+                JSONObject reunionJson = reunionsArray.getJSONObject(i);
+                try {
+                    int id = reunionJson.getInt("id");
+                    String nom = reunionJson.getString("nom");
+                    String sujet = reunionJson.optString("sujet");
+                    LocalDateTime debut = LocalDateTime.parse(reunionJson.getString("debut"), DateTimeFormatter.ISO_DATE_TIME);
+                    int duree = reunionJson.getInt("duree");
+                    Reunion.Type type = Reunion.Type.valueOf(reunionJson.getString("type").toUpperCase());
+                    int idOrganisateur = reunionJson.getInt("idOrganisateur");
+                    Integer idAnimateur = reunionJson.has("idAnimateur") && !reunionJson.isNull("idAnimateur") ? reunionJson.getInt("idAnimateur") : null;
+
+                    Reunion reunion = new Reunion(id, nom, sujet, null, debut, duree, type, idOrganisateur, idAnimateur);
+                    reunionsObservables.add(reunion);
+                } catch (Exception e) {
+                    System.err.println("Erreur de parsing pour la réunion JSON : " + reunionJson.toString() + " - " + e.getMessage());
+                }
+            }
+        }
+        if (reunionsObservables.isEmpty()) {
+            listeReunionsUtilisateur.setPlaceholder(new Label("Vous n'avez aucune réunion planifiée."));
+        }
+    }
+
+
+    private void ouvrirInterfaceReunion(String reunionId, String nomReunion, int organisateurId, boolean isCurrentUserOrganizer) {
+        // Fermer le modal de chargement avant d'ouvrir l'interface
+        hideLoadingDialog();
+
         try {
+            Stage stage = (Stage) welcomeLabel.getScene().getWindow();
             FXMLLoader loader = new FXMLLoader(getClass().getResource("/reunion.fxml"));
             Parent root = loader.load();
 
             ReunionController reunionController = loader.getController();
-            int organizateurId = isCreator ? userId : -1;
-            String fullName = (nom != null && prenom != null) ? nom + " " + prenom : "Utilisateur";
+            reunionController.setClientWebSocket(this.clientWebSocket);
 
-            reunionController.initData(reunionId, userId, organizateurId, clientWebSocket, fullName);
+            // Le nom d'utilisateur complet (prénom + nom) est plus pertinent pour l'affichage dans la réunion
+            String nomCompletUtilisateur = (prenomUtilisateur != null ? prenomUtilisateur : "") +
+                    ((prenomUtilisateur != null && nomUtilisateur != null) ? " " : "") +
+                    (nomUtilisateur != null ? nomUtilisateur : "");
+            if (nomCompletUtilisateur.trim().isEmpty()) {
+                nomCompletUtilisateur = "Utilisateur " + this.currentUserId;
+            }
 
-            Stage stage = new Stage();
-            stage.setTitle("📹 Réunion - " + reunionId + (isCreator ? " (Organisateur)" : ""));
-            stage.setScene(new Scene(root));
+            reunionController.initData(reunionId, this.currentUserId, nomReunion, organisateurId, nomCompletUtilisateur);
 
+            if (this.clientWebSocket != null) {
+                this.clientWebSocket.setControllerReunion(reunionController);
+                this.clientWebSocket.setControllerEspc(null);
+            }
+
+            Scene scene = new Scene(root);
+            stage.setScene(scene);
+            stage.setTitle("Réunion: " + nomReunion);
             stage.setOnCloseRequest(event -> {
-                reunionController.cleanup();
+                reunionController.handleQuitterReunion();
+                if (this.clientWebSocket != null) {
+                    this.clientWebSocket.setControllerEspc(this);
+                    this.clientWebSocket.setControllerReunion(null);
+                    fetchUserMeetings();
+                }
             });
-
             stage.show();
 
         } catch (IOException e) {
-            System.err.println("Erreur lors de l'ouverture de l'interface de réunion: " + e.getMessage());
             e.printStackTrace();
-            showModernAlert("Erreur", "Impossible d'ouvrir l'interface de réunion.", Alert.AlertType.ERROR);
+            showAlert(Alert.AlertType.ERROR, "Erreur", "Impossible d'ouvrir l'interface de réunion: " + e.getMessage());
         }
     }
 
-    private void ouvrirInterfaceReunion(String reunionId) {
-        ouvrirInterfaceReunion(reunionId, false);
+    private Dialog<Reunion> createReunionDialog() {
+        Dialog<Reunion> dialog = new Dialog<>();
+        dialog.setTitle("Nouvelle Réunion");
+        dialog.setHeaderText("Planifiez votre nouvelle réunion");
+
+        try {
+            String cssPath = getClass().getResource("/styles/main.css").toExternalForm();
+            dialog.getDialogPane().getStylesheets().add(cssPath);
+            dialog.getDialogPane().getStyleClass().add("dialog-pane");
+        } catch (Exception e) {
+            System.err.println("CSS pour dialogue non trouvé: " + e.getMessage());
+        }
+
+        ButtonType creerButtonType = new ButtonType("Créer", ButtonBar.ButtonData.OK_DONE);
+        dialog.getDialogPane().getButtonTypes().addAll(creerButtonType, ButtonType.CANCEL);
+
+        VBox content = new VBox(15);
+        content.setPadding(new Insets(20));
+
+        TextField nomField = new TextField();
+        nomField.setPromptText("Nom de la réunion (ex: Point d'équipe)");
+        nomField.getStyleClass().add("text-input");
+
+        TextField sujetField = new TextField();
+        sujetField.setPromptText("Sujet (optionnel)");
+        sujetField.getStyleClass().add("text-input");
+
+        DatePicker datePicker = new DatePicker(LocalDate.now().plusDays(1)); // Par défaut demain
+        datePicker.getStyleClass().add("date-picker");
+
+        ComboBox<String> heureCombo = new ComboBox<>();
+        LocalTime currentTime = LocalTime.now();
+        int nextHour = (currentTime.getMinute() < 30) ? currentTime.getHour() : currentTime.getHour() + 1;
+        if (nextHour > 23) nextHour = 8; // Default to 8 AM if next hour is past midnight
+
+        for (int h = 8; h < 23; h++) { // Heures de bureau
+            heureCombo.getItems().add(String.format("%02d:00", h));
+            heureCombo.getItems().add(String.format("%02d:30", h));
+        }
+        heureCombo.setValue(String.format("%02d:00", nextHour));
+        heureCombo.getStyleClass().add("combo-box");
+
+        Spinner<Integer> dureeSpinner = new Spinner<>(15, 240, 60, 15);
+        dureeSpinner.setEditable(true);
+        dureeSpinner.getStyleClass().add("text-input"); // Utiliser text-input pour un style cohérent
+
+        ComboBox<Reunion.Type> typeComboBox = new ComboBox<>();
+        typeComboBox.setItems(FXCollections.observableArrayList(Reunion.Type.values()));
+        typeComboBox.setValue(Reunion.Type.STANDARD);
+        typeComboBox.getStyleClass().add("combo-box");
+
+        content.getChildren().addAll(
+                new Label("Nom de la réunion:"), nomField,
+                new Label("Sujet (optionnel):"), sujetField,
+                new Label("Date:"), datePicker,
+                new Label("Heure de début:"), heureCombo,
+                new Label("Durée (minutes):"), dureeSpinner,
+                new Label("Type de réunion:"), typeComboBox
+        );
+        content.getChildren().filtered(node -> node instanceof Label).forEach(node -> node.getStyleClass().add("field-label"));
+
+        dialog.getDialogPane().setContent(content);
+
+        dialog.setResultConverter(dialogButton -> {
+            if (dialogButton == creerButtonType) {
+                try {
+                    String nom = nomField.getText();
+                    if (nom == null || nom.trim().isEmpty()) {
+                        showAlert(Alert.AlertType.ERROR, "Validation", "Le nom de la réunion est obligatoire.");
+                        return null;
+                    }
+                    LocalDate date = datePicker.getValue();
+                    LocalTime heure = LocalTime.parse(heureCombo.getValue(), DateTimeFormatter.ofPattern("HH:mm"));
+                    LocalDateTime debut = LocalDateTime.of(date, heure);
+
+                    if (debut.isBefore(LocalDateTime.now().plusMinutes(5))) { // Au moins 5 min dans le futur
+                        showAlert(Alert.AlertType.ERROR, "Validation", "La date de début doit être dans le futur (au moins 5 minutes).");
+                        return null;
+                    }
+
+                    return new Reunion(0, nom.trim(), sujetField.getText().trim(), null,
+                            debut, dureeSpinner.getValue(), typeComboBox.getValue(),
+                            this.currentUserId, null
+                    );
+                } catch (Exception e) {
+                    showAlert(Alert.AlertType.ERROR, "Erreur de Saisie", "Veuillez vérifier les champs: " + e.getMessage());
+                    return null;
+                }
+            }
+            return null;
+        });
+        return dialog;
     }
 
-    // Getters et Setters
-    public Reunion getReunion() { return reunion; }
-    public void setReunion(Reunion reunion) { this.reunion = reunion; }
-    public String getNom() { return nom; }
-    public String getPrenom() { return prenom; }
-    public int getUserId() { return userId; }
+    static class ReunionListCell extends ListCell<Reunion> {
+        private DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd/MM/yyyy 'à' HH:mm");
+
+        @Override
+        protected void updateItem(Reunion reunion, boolean empty) {
+            super.updateItem(reunion, empty);
+            if (empty || reunion == null) {
+                setText(null);
+                setGraphic(null);
+            } else {
+                VBox vbox = new VBox(5);
+                Label nomLabel = new Label(reunion.getNom());
+                nomLabel.getStyleClass().add("body-text"); // Utiliser les classes CSS
+                nomLabel.setStyle("-fx-font-weight: bold;");
+
+                Label dateLabel = new Label("Le " + reunion.getDebut().format(formatter) + " (" + reunion.getDuree() + " min)");
+                dateLabel.getStyleClass().add("secondary-text");
+
+                Label typeLabel = new Label("Type: " + reunion.getType().toString());
+                typeLabel.getStyleClass().add("secondary-text");
+
+                vbox.getChildren().addAll(nomLabel, dateLabel, typeLabel);
+                setGraphic(vbox);
+            }
+        }
+    }
+
+    private void showLoadingDialog(String message) {
+        Platform.runLater(() -> {
+            if (loadingDialog == null) {
+                loadingDialog = new Dialog<>();
+                loadingDialog.initModality(Modality.APPLICATION_MODAL);
+                loadingDialog.setResizable(false);
+                loadingDialog.setHeaderText(null);
+                loadingDialog.setTitle("Chargement");
+
+                VBox content = new VBox(20);
+                content.setPadding(new Insets(30));
+                content.setAlignment(javafx.geometry.Pos.CENTER);
+                ProgressIndicator pi = new ProgressIndicator();
+                pi.setMaxSize(50, 50);
+                Label messageLabel = new Label(message);
+                messageLabel.getStyleClass().add("body-text");
+                content.getChildren().addAll(pi, messageLabel);
+
+                loadingDialog.getDialogPane().setContent(content);
+
+                // Supprimer les boutons par défaut
+                loadingDialog.getDialogPane().getButtonTypes().clear();
+
+                try {
+                    String cssPath = getClass().getResource("/styles/main.css").toExternalForm();
+                    loadingDialog.getDialogPane().getStylesheets().add(cssPath);
+                    loadingDialog.getDialogPane().getStyleClass().add("dialog-pane");
+                } catch (Exception e) {
+                    System.err.println("CSS pour dialogue non trouvé: " + e.getMessage());
+                }
+            } else {
+                // Mettre à jour le message si le dialog existe déjà
+                VBox content = (VBox) loadingDialog.getDialogPane().getContent();
+                Label messageLabel = (Label) content.getChildren().get(1);
+                messageLabel.setText(message);
+            }
+
+            if (!loadingDialog.isShowing()) {
+                loadingDialog.show();
+            }
+        });
+    }
+
+    // 4. Améliorer la méthode hideLoadingDialog
+    private void hideLoadingDialog() {
+        Platform.runLater(() -> {
+            if (loadingDialog != null && loadingDialog.isShowing()) {
+                loadingDialog.hide(); // Utiliser hide() au lieu de close() pour réutiliser le dialog
+            }
+        });
+    }
+
+    // Changé en public pour être accessible par ClientWebSocket
+    public void showAlert(Alert.AlertType alertType, String title, String message) {
+        Alert alert = new Alert(alertType);
+        alert.setTitle(title);
+        alert.setHeaderText(null);
+        alert.setContentText(message);
+        try {
+            String cssPath = getClass().getResource("/styles/main.css").toExternalForm();
+            if (cssPath != null) {
+                alert.getDialogPane().getStylesheets().add(cssPath);
+                alert.getDialogPane().getStyleClass().add("dialog-pane");
+            }
+        } catch (Exception e) {
+            System.err.println("CSS pour alerte non trouvé: " + e.getMessage());
+        }
+        alert.showAndWait();
+    }
 }
