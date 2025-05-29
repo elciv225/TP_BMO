@@ -6,6 +6,7 @@ import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.stage.Stage;
 import javafx.stage.Window;
+import org.json.JSONObject; // Added for JSON parsing
 
 import javax.websocket.*;
 import java.io.IOException;
@@ -23,6 +24,11 @@ public class ClientWebSocket {
     private boolean estConnecte = false;
     AuthentificationController controllerAuth;
     EspaceUtilisateurController controllerEspc;
+    private ReunionController controllerReunion; // Added for active ReunionController
+
+    public void setControllerReunion(ReunionController controller) { // Added setter for ReunionController
+        this.controllerReunion = controller;
+    }
 
     public void setControllerAuth(AuthentificationController controller) {
         this.controllerAuth = controller;
@@ -52,22 +58,60 @@ public class ClientWebSocket {
     public void onMessage(String message) {
         System.out.println("Message reçu du serveur: " + message);
 
-        // CORRECTION: Vérifier si le message est au format JSON
         if (message != null && message.trim().startsWith("{")) {
             try {
-                if (controllerAuth != null) {
-                    controllerAuth.traiterReponseConnexion(message);
-                }
-                if (controllerEspc != null) {
-                    controllerEspc.traiterReponseConnexion(message);
+                JSONObject jsonMessage = new JSONObject(message);
+
+                if (jsonMessage.has("modele")) {
+                    String modele = jsonMessage.optString("modele");
+                    if ("authentification".equals(modele)) {
+                        if (controllerAuth != null) {
+                            controllerAuth.traiterReponseConnexion(message);
+                        } else {
+                            System.err.println("controllerAuth est null, impossible de traiter le message d'authentification.");
+                        }
+                    } else if ("reunion".equals(modele)) { // For EspaceUtilisateurController (initial join/create responses)
+                        if (controllerEspc != null) {
+                            controllerEspc.traiterReponseConnexion(message);
+                        } else {
+                            System.err.println("controllerEspc est null, impossible de traiter le message de réunion (modèle).");
+                        }
+                    } else {
+                        System.out.println("Message avec modele non géré: " + modele);
+                    }
+                } else if (jsonMessage.has("type")) { // For active ReunionController messages (e.g., newMessage, userJoined)
+                    if (controllerReunion != null && controllerReunion.isInitialized()) {
+                        String messageReunionId = jsonMessage.optString("reunionId");
+                        if (!messageReunionId.isEmpty() && controllerReunion.getCurrentReunionId() != null &&
+                            messageReunionId.equals(controllerReunion.getCurrentReunionId())) {
+                            controllerReunion.traiterMessageRecu(message);
+                        } else if (messageReunionId.isEmpty()) {
+                            // For messages like 'invitationResult' or general errors not tied to a specific reunionId
+                            controllerReunion.traiterMessageRecu(message);
+                        } else {
+                             System.out.println("Message de réunion (type) reçu pour reunionId " + messageReunionId +
+                                                " mais ReunionController est sur " + controllerReunion.getCurrentReunionId() +
+                                                ". Message ignoré par ReunionController.");
+                        }
+                    } else {
+                        System.out.println("Message avec type " + jsonMessage.optString("type") + " reçu mais pas de contrôleur de réunion actif/initialisé.");
+                         // Potentially route to controllerEspc if it should handle some 'type' messages when no meeting is active
+                        if (controllerEspc != null) {
+                            // Example: controllerEspc.handleGeneralTypeMessage(message);
+                            System.out.println("No active ReunionController, message type " + jsonMessage.optString("type") + " not handled further.");
+                        }
+                    }
+                } else {
+                    // Existing handling for non-JSON or other text messages
+                    System.out.println("Message texte (ou JSON non structuré pour routage) du serveur: " + message);
                 }
             } catch (Exception e) {
-                System.err.println("Erreur lors du traitement du message JSON: " + e.getMessage());
+                System.err.println("Erreur lors du parsing ou du traitement du message JSON: " + e.getMessage());
                 e.printStackTrace();
             }
         } else {
-            // Message de bienvenue ou autre message texte
-            System.out.println("Message texte du serveur: " + message);
+            // Message non-JSON (e.g. welcome message from server)
+            System.out.println("Message texte (non-JSON) du serveur: " + message);
         }
     }
 

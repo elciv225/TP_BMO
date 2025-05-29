@@ -112,7 +112,7 @@ public class EspaceUtilisateurController {
             if (r != null) {
                 System.out.println("Nouvelle réunion: " + r.toString());
                 setReunion(r);
-                showLoadingDialog("Création de la réunion...");
+                // showLoadingDialog("Création de la réunion..."); // Removed as per request
                 creerReunion(r);
             }
         });

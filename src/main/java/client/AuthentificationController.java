@@ -139,6 +139,10 @@ public class AuthentificationController {
                         // Get the controller for the loaded FXML
                         EspaceUtilisateurController espaceUtilisateurController = loader.getController();
 
+                        if (clientWebSocket != null) {
+                            clientWebSocket.setControllerEspc(espaceUtilisateurController);
+                        }
+
                         // Extract user information from the response
                         JSONObject personneJson = jsonResponse.optJSONObject("personne");
                         if (personneJson != null) {
@@ -155,6 +159,10 @@ public class AuthentificationController {
 
                         stage.setScene(new Scene(root));
                         stage.show();
+
+                        if (clientWebSocket != null) {
+                            clientWebSocket.setControllerAuth(null);
+                        }
 
                     } catch (IOException e) {
                         e.printStackTrace();

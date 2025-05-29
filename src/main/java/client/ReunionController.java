@@ -144,10 +144,14 @@ public class ReunionController {
         this.isInitialized = true;
 
         // Configuration WebSocket
-        if (webSocket != null && webSocket.getSessionAuth() != null) {
-            webSocket.getSessionAuth().getUserProperties().put("reunionId", reunionId);
-            webSocket.getSessionAuth().getUserProperties().put("userId", String.valueOf(userId));
+        if (this.clientWebSocket != null) {
+            this.clientWebSocket.setControllerReunion(this);
         }
+        // Removed:
+        // if (webSocket != null && webSocket.getSessionAuth() != null) {
+        //     webSocket.getSessionAuth().getUserProperties().put("reunionId", reunionId);
+        //     webSocket.getSessionAuth().getUserProperties().put("userId", String.valueOf(userId));
+        // }
 
         configureInvitationVisibility();
         updateConnectionStatus("🎥 Réunion " + reunionId + " en cours", true);
@@ -593,6 +597,10 @@ public class ReunionController {
     public void cleanup() {
         if (durationTimer != null) {
             durationTimer.stop();
+        }
+
+        if (this.clientWebSocket != null) { // Deregister from ClientWebSocket
+            this.clientWebSocket.setControllerReunion(null);
         }
 
         if (clientWebSocket != null) {

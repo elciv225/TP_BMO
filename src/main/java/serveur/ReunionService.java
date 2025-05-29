@@ -30,7 +30,7 @@ public class ReunionService implements WebSocketAction {
                 reponse = creerReunion(data, session);
                 break;
             case "rejoindre":
-                reponse = rejoindreReunion(data);
+                reponse = rejoindreReunion(data, session); // Pass session
                 break;
             case "details":
                 reponse = obtenirDetailsReunion(data);
@@ -42,7 +42,7 @@ public class ReunionService implements WebSocketAction {
                 handleInviterMembre(data, session);
                 return;
             case "quitterReunion":
-                reponse = quitterReunion(data);
+                reponse = quitterReunion(data, session); // Pass session
                 break;
             default:
                 reponse = genererReponseErreur("Action inconnue '" + action + "' dans le modèle reunion");
@@ -398,7 +398,7 @@ public class ReunionService implements WebSocketAction {
         }
     }
 
-    private String rejoindreReunion(JSONObject data) {
+    private String rejoindreReunion(JSONObject data, Session session) {
         JSONObject reponseJson = new JSONObject();
         reponseJson.put("modele", "reunion");
         reponseJson.put("action", "reponseRejoindre");
@@ -450,6 +450,15 @@ public class ReunionService implements WebSocketAction {
                 reponseJson.put("message", "Vous avez rejoint la réunion " + codeReunion);
                 reponseJson.put("reunionId", reunionId);
 
+                if (session != null && session.isOpen()) {
+                    session.getUserProperties().put("reunionId", String.valueOf(reunionId));
+                    // Also good to ensure userId is stored if available and consistent
+                    if (data.has("userId")) {
+                        session.getUserProperties().put("userId", String.valueOf(data.optInt("userId")));
+                    }
+                    System.out.println("Session " + session.getId() + " associated with reunionId: " + reunionId);
+                }
+
             } catch (SQLException e) {
                 System.err.println("Erreur SQL lors de la participation: " + e.getMessage());
                 return genererReponseErreur("Erreur lors de la participation à la réunion");
@@ -494,29 +503,38 @@ public class ReunionService implements WebSocketAction {
         return reponseJson.toString();
     }
 
-    private String quitterReunion(JSONObject data) {
+    private String quitterReunion(JSONObject data, Session session) {
         JSONObject reponseJson = new JSONObject();
         reponseJson.put("modele", "reunion");
         reponseJson.put("action", "reponseQuitter");
 
         try {
-            String reunionId = data.optString("reunionId");
+            String reunionIdStr = data.optString("reunionId"); // Renamed to avoid confusion
             int userId = data.optInt("userId", -1);
 
-            if (reunionId.isEmpty() || userId == -1) {
+            if (reunionIdStr.isEmpty() || userId == -1) {
                 return genererReponseErreur("ID de réunion et utilisateur requis");
+            }
+
+            // Remove from session first
+            if (session != null && session.isOpen()) {
+                session.getUserProperties().remove("reunionId");
+                System.out.println("Session " + session.getId() + " disassociated from reunionId upon quit.");
             }
 
             try (Connection conn = Database.getConnection();
                  PreparedStatement stmt = conn.prepareStatement("DELETE FROM participation WHERE personne_id = ? AND reunion_id = ?")) {
                 stmt.setInt(1, userId);
-                stmt.setInt(2, Integer.parseInt(reunionId));
+                stmt.setInt(2, Integer.parseInt(reunionIdStr)); // Use the string version for parsing
                 stmt.executeUpdate();
             }
 
             reponseJson.put("statut", "succes");
             reponseJson.put("message", "Vous avez quitté la réunion");
 
+        } catch (NumberFormatException e) {
+            System.err.println("Erreur lors de la conversion de l'ID de réunion: " + e.getMessage());
+            return genererReponseErreur("Format d'ID de réunion invalide");
         } catch (Exception e) {
             System.err.println("Erreur lors de la sortie de réunion: " + e.getMessage());
             return genererReponseErreur("Erreur lors de la sortie de réunion");
