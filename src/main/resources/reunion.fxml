@@ -3,215 +3,75 @@
 <?import javafx.geometry.Insets?>
 <?import javafx.scene.control.Button?>
 <?import javafx.scene.control.Label?>
+<?import javafx.scene.control.ListView?>
 <?import javafx.scene.control.ScrollPane?>
 <?import javafx.scene.control.TextField?>
+<?import javafx.scene.control.Tooltip?>
+<?import javafx.scene.layout.BorderPane?>
 <?import javafx.scene.layout.HBox?>
-<?import javafx.scene.layout.Region?>
+<?import javafx.scene.layout.Pane?>
 <?import javafx.scene.layout.VBox?>
+<?import javafx.scene.shape.SVGPath?>
 
-<!-- Interface de Réunion Moderne - Style Teams/Meet -->
-<VBox fx:id="reunionContainer"
-      styleClass="reunion-container"
-      maxHeight="-Infinity"
-      maxWidth="-Infinity"
-      minHeight="-Infinity"
-      minWidth="-Infinity"
-      prefHeight="800.0"
-      prefWidth="1200.0"
-      stylesheets="@styles/main.css"
-      xmlns="http://javafx.com/javafx/23.0.1"
-      xmlns:fx="http://javafx.com/fxml/1"
-      fx:controller="client.ReunionController">
-
-    <!-- En-tête moderne avec statut de connexion -->
-    <HBox styleClass="reunion-header"
-          alignment="CENTER_LEFT"
-          spacing="20.0"
-          prefHeight="70.0">
-
-        <!-- Indicateur de statut -->
-        <HBox alignment="CENTER_LEFT" spacing="10.0">
-            <Label text="🔴"
-                   fx:id="statusIndicator"
-                   styleClass="status-dot"
-                   managed="true"/>
-            <Label fx:id="connectionStatus"
-                   styleClass="connectionStatus, connected"
-                   text="🎥 Réunion en cours"/>
+<BorderPane styleClass="reunion-container" stylesheets="@/styles/main.css"
+            xmlns:fx="http://javafx.com/fxml/1" xmlns="http://javafx.com/javafx/21"
+            fx:controller="client.ReunionController" prefHeight="700.0" prefWidth="1000.0">
+    <top>
+        <HBox fx:id="toolBar" alignment="CENTER_LEFT" spacing="15" styleClass="reunion-header-bar">
+            <Label fx:id="statusIndicator" text="●" styleClass="status-indicator-dot connected"/>
+            <Label fx:id="connectionStatus" text="Nom de la Réunion" style="-fx-font-size: -font-size-medium; -fx-font-weight: MEDIUM;"/>
+            <Pane HBox.hgrow="ALWAYS"/>
+            <Label fx:id="meetingDuration" text="00:00:00"/>
+            <Button fx:id="btnToggleParticipants" styleClass="icon-button" onAction="#handleToggleParticipantsPane">
+                <graphic>
+                    <SVGPath content="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z" styleClass="icon-graphic"/>
+                </graphic>
+                <tooltip><Tooltip text="Afficher les participants"/></tooltip>
+            </Button>
+            <Button text="Quitter" onAction="#handleQuitterReunion" styleClass="destructive-action-button"/>
         </HBox>
+    </top>
 
-        <!-- Espacement flexible -->
-        <Region HBox.hgrow="ALWAYS" />
-
-        <!-- Informations de réunion -->
-        <HBox alignment="CENTER_RIGHT" spacing="15.0">
-            <Label text="👥 Participants: 1"
-                   fx:id="participantCount"
-                   styleClass="header-info-text"/>
-            <Label text="⏱️ 00:15:32"
-                   fx:id="meetingDuration"
-                   styleClass="header-info-text"/>
-        </HBox>
-    </HBox>
-
-    <!-- Zone principale de contenu -->
-    <HBox VBox.vgrow="ALWAYS" spacing="0">
-        <VBox HBox.hgrow="ALWAYS" spacing="0">
-
-            <!-- Zone de messages avec scroll moderne -->
-            <ScrollPane fx:id="messageScrollPane"
-                        fitToWidth="true"
-                        VBox.vgrow="ALWAYS"
-                        styleClass="scroll-pane, message-area-scroll-pane">
-                <content>
-                    <VBox fx:id="messageArea"
-                          styleClass="messageArea">
-                        <!-- Message de bienvenue -->
-                        <VBox alignment="CENTER" spacing="10.0" styleClass="chat-welcome-message-container">
-                            <Label text="🎉" styleClass="chat-welcome-icon"/>
-                            <Label text="Bienvenue dans votre réunion !"
-                                   styleClass="chat-welcome-title"/>
-                            <Label text="Commencez à discuter avec vos participants"
-                                   styleClass="chat-welcome-subtitle"/>
-                        </VBox>
+    <center>
+        <ScrollPane fx:id="messageScrollPane" fitToWidth="true" hbarPolicy="NEVER" styleClass="chat-message-area">
+            <content>
+                <VBox fx:id="messageArea" styleClass="message-list-vbox">
                     </VBox>
-                </content>
-            </ScrollPane>
+            </content>
+        </ScrollPane>
+    </center>
 
-            <!-- Zone d'invitation (visible pour l'organisateur) -->
-            <HBox fx:id="invitationArea"
-                  alignment="CENTER_LEFT"
-                  spacing="15.0"
-                  styleClass="invitation-area"
-                  managed="false"
-                  visible="false"
-                  prefHeight="80.0">
-                <!-- Padding removed, should be handled by .invitation-area CSS -->
-
-                <Label text="👥" styleClass="invitation-area-icon"/>
-                <Label text="Inviter un participant:"
-                       styleClass="field-label, invitation-area-label"/>
-
-                <TextField fx:id="inviteUserField"
-                          styleClass="invite-user-field"
-                          prefHeight="40.0"
-                          prefWidth="300.0"
-                          promptText="Nom d'utilisateur à inviter"/>
-
-                <Button fx:id="inviteButton"
-                        styleClass="invite-button"
-                        text="✉️ Inviter"
-                        prefHeight="40.0"
-                        minWidth="100.0"/>
+    <bottom>
+        <VBox spacing="0">
+            <HBox fx:id="invitationArea" alignment="CENTER_LEFT" spacing="10" styleClass="invitation-section"
+                  managed="false" visible="false">
+                <Label text="Inviter à la réunion:" styleClass="field-label"/>
+                <TextField fx:id="inviteUserField" promptText="Login de l'utilisateur" HBox.hgrow="ALWAYS"
+                           styleClass="text-input" style="-fx-pref-height: 38px;"/>
+                <Button fx:id="inviteButton" text="Inviter" onAction="#handleInviteUser" styleClass="secondary-action-button"/>
             </HBox>
 
-            <!-- Zone de saisie moderne style Teams -->
-            <HBox fx:id="inputArea"
-                  alignment="CENTER_LEFT"
-                  spacing="15.0"
-                  prefHeight="90.0"
-                  styleClass="chat-input-container">
-                <!-- Padding removed, should be handled by .chat-input-container CSS -->
-
-                <!-- Champ de saisie avec style moderne -->
-                <TextField fx:id="messageInput"
-                          prefHeight="50.0"
-                          HBox.hgrow="ALWAYS"
-                          promptText="💬 Tapez votre message ici..."
-                          styleClass="chat-input-field"/>
-
-                <!-- Boutons d'action modernes -->
-                <HBox spacing="10.0" alignment="CENTER">
-                    <!-- Bouton emoji (futur) -->
-                    <Button text="😊"
-                            styleClass="chat-emoji-button"
-                            managed="false"
-                            visible="false"/>
-
-                    <!-- Bouton d'envoi moderne -->
-                    <Button fx:id="sendButton"
-                            text="📤"
-                            styleClass="chat-send-button"
-                            prefWidth="55.0"
-                            prefHeight="55.0"
-                            minWidth="55.0"
-                            maxWidth="55.0"/>
-                </HBox>
+            <HBox fx:id="inputArea" alignment="CENTER" spacing="10" styleClass="chat-input-bar">
+                <TextField fx:id="messageInput" promptText="Écrivez votre message ici..." HBox.hgrow="ALWAYS"
+                           styleClass="text-input" onAction="#envoyerMessage"/>
+                <Button fx:id="sendButton" onAction="#envoyerMessage" styleClass="primary-action-button" minWidth="60.0">
+                    <graphic>
+                        <SVGPath content="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z" styleClass="icon-white"/>
+                    </graphic>
+                    <tooltip><Tooltip text="Envoyer le message"/></tooltip>
+                </Button>
             </HBox>
         </VBox>
+    </bottom>
 
-        <!-- Panneau latéral (futur - participants) -->
-        <VBox fx:id="sidePanel"
-              prefWidth="320.0"
-              styleClass="side-panel-container"
-              managed="false"
-              visible="false">
-            <!-- Padding removed, handled by .side-panel-container CSS -->
-
-            <!-- En-tête du panneau -->
-            <HBox alignment="CENTER_LEFT" spacing="10.0" styleClass="side-panel-header">
-                <Label text="👥" styleClass="side-panel-header-icon"/>
-                <Label text="Participants"
-                       styleClass="side-panel-title"/>
-            </HBox>
-
-            <!-- Liste des participants (à implémenter) -->
-            <ScrollPane fitToWidth="true" VBox.vgrow="ALWAYS" styleClass="scroll-pane, side-panel-scroll-pane">
-                <content>
-                    <VBox fx:id="participantsList" spacing="10.0" styleClass="participants-list-container">
-                        <!-- Les participants seront ajoutés dynamiquement -->
-                    </VBox>
-                </content>
-            </ScrollPane>
-
-            <!-- Actions du panneau -->
-            <VBox spacing="10.0" styleClass="side-panel-actions-container">
-                <Button text="🔗 Copier le lien"
-                        styleClass="button-outline"
-                        prefWidth="280.0"/>
-                <Button text="⚙️ Paramètres"
-                        styleClass="button-secondary-outline"
-                        prefWidth="280.0"/>
-            </VBox>
+    <right>
+        <VBox fx:id="participantsPane" styleClass="participants-sidebar" spacing="10" prefWidth="250"
+              managed="false" visible="false">
+            <children>
+                <Label text="Participants" styleClass="section-title"/>
+                <Label fx:id="participantCountLabel" styleClass="secondary-text"/>
+                <ListView fx:id="participantsListView" VBox.vgrow="ALWAYS"/>
+            </children>
         </VBox>
-    </HBox>
-
-    <!-- Barre d'outils inférieure (futur) -->
-    <HBox fx:id="toolBar"
-          alignment="CENTER"
-          spacing="20.0"
-          prefHeight="70.0"
-          style="-fx-background-color: rgba(52, 58, 64, 0.95); -fx-border-color: rgba(0,0,0,0.2); -fx-border-width: 1 0 0 0;"
-          managed="false"
-          visible="false">
-
-        <padding>
-            <Insets top="15.0" bottom="15.0" left="30.0" right="30.0"/>
-        </padding>
-
-        <!-- Boutons de contrôle -->
-        <Button text="🎤"
-                style="-fx-background-color: #28a745; -fx-text-fill: white; -fx-border-radius: 50%; -fx-background-radius: 50%; -fx-font-size: 1.2em;"
-                prefWidth="50.0"
-                prefHeight="50.0"/>
-
-        <Button text="📹"
-                style="-fx-background-color: #28a745; -fx-text-fill: white; -fx-border-radius: 50%; -fx-background-radius: 50%; -fx-font-size: 1.2em;"
-                prefWidth="50.0"
-                prefHeight="50.0"/>
-
-        <Button text="📺"
-                style="-fx-background-color: #17a2b8; -fx-text-fill: white; -fx-border-radius: 50%; -fx-background-radius: 50%; -fx-font-size: 1.2em;"
-                prefWidth="50.0"
-                prefHeight="50.0"/>
-
-        <!-- Espacement -->
-        <Region HBox.hgrow="ALWAYS"/>
-
-        <!-- Bouton quitter -->
-        <Button text="📞 Quitter"
-                style="-fx-background-color: #dc3545; -fx-text-fill: white; -fx-border-radius: 25; -fx-background-radius: 25; -fx-font-weight: 600; -fx-padding: 12 25;"
-                prefHeight="45.0"/>
-    </HBox>
-
-</VBox>
+    </right>
+</BorderPane>

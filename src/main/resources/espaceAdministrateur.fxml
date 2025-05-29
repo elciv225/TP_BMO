@@ -1,22 +1,32 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
+<?import javafx.geometry.Insets?>
 <?import javafx.scene.control.Label?>
+<?import javafx.scene.control.ListView?>
+<?import javafx.scene.layout.BorderPane?>
+<?import javafx.scene.layout.HBox?>
 <?import javafx.scene.layout.VBox?>
+<?import javafx.scene.shape.SVGPath?>
 
-<!-- Root VBox uses page-container for common layout and espace-administrateur-container for specific overrides -->
-<!-- Inline spacing removed to defer to page-container CSS. Padding is handled by CSS. -->
-<VBox fx:id="adminContainer" styleClass="page-container, espace-administrateur-container"
-      alignment="TOP_CENTER"
-      stylesheets="@styles/main.css"
-      prefHeight="600.0" prefWidth="800.0"
-      xmlns="http://javafx.com/javafx/23.0.1" xmlns:fx="http://javafx.com/fxml/1"
-      fx:controller="client.EspaceAdministrateurController">
-
-    <Label text="Panneau d'Administration" styleClass="main-title" />
-
-    <!-- admin-content-area provides the main content box styling -->
-    <VBox styleClass="admin-content-area" alignment="CENTER" VBox.vgrow="ALWAYS">
-        <Label text="Les outils d'administration apparaîtront ici." styleClass="placeholder-label" />
-    </VBox>
-
-</VBox>
+<BorderPane styleClass="page-container" stylesheets="@/styles/main.css"
+            xmlns:fx="http://javafx.com/fxml/1" xmlns="http://javafx.com/javafx/21"
+            fx:controller="client.EspaceAdministrateurController" prefHeight="600.0" prefWidth="800.0">
+    <top>
+        <HBox alignment="CENTER_LEFT" spacing="10" style="-fx-padding: 16px; -fx-border-width: 0 0 1px 0; -fx-border-color: -border-color-light;">
+             <SVGPath content="M19.43 12.98c.04-.32.07-.64.07-.98s-.03-.66-.07-.98l2.11-1.65c.19-.15.24-.42.12-.64l-2-3.46c-.12-.22-.39-.3-.61-.22l-2.49 1c-.52-.4-1.08-.73-1.69-.98l-.38-2.65C14.46 2.18 14.25 2 14 2h-4c-.25 0-.46.18-.49.42l-.38 2.65c-.61.25-1.17.59-1.69.98l-2.49-1c-.23-.09-.49 0-.61.22l-2 3.46c-.13.22-.07.49.12.64l2.11 1.65c-.04.32-.07.65-.07.98s.03.66.07.98l-2.11 1.65c-.19-.15-.24.42.12.64l2 3.46c.12.22.39.3.61.22l2.49 1c.52.4 1.08.73 1.69.98l.38 2.65c.03.24.24.42.49.42h4c.25 0 .46-.18.49-.42l.38-2.65c.61-.25 1.17-.59 1.69-.98l2.49 1c.23.09.49 0 .61.22l2 3.46c.12.22.07.49-.12.64l-2.11-1.65zM12 15.5c-1.93 0-3.5-1.57-3.5-3.5s1.57-3.5 3.5-3.5 3.5 1.57 3.5 3.5-1.57 3.5-3.5 3.5z" styleClass="icon-graphic"/>
+            <Label text="Panneau d'Administration" styleClass="section-title" style="-fx-padding: 0;"/>
+        </HBox>
+    </top>
+    <center>
+        <VBox alignment="TOP_CENTER" spacing="20" styleClass="content-section" style="-fx-padding: 16px; -fx-margin: 16px;"> <Label text="Gestion des Utilisateurs et Réunions" styleClass="section-title"/>
+            <Label text="Cette section est réservée à l'administration de l'application." styleClass="body-text"/>
+            <Label text="Des fonctionnalités de gestion seront ajoutées ici." styleClass="secondary-text"/>
+            <ListView fx:id="adminDataListView" prefHeight="350.0" styleClass="list-view"> <placeholder>
+                    <Label text="Aucune donnée à afficher pour le moment." styleClass="secondary-text"/> </placeholder>
+            </ListView>
+            <padding>
+                <Insets top="20" bottom="20" left="20" right="20"/>
+            </padding>
+        </VBox>
+    </center>
+</BorderPane>

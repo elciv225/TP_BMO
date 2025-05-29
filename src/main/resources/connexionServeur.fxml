@@ -1,19 +1,28 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
+<?import javafx.geometry.Insets?>
 <?import javafx.scene.control.Button?>
 <?import javafx.scene.control.Label?>
 <?import javafx.scene.control.TextField?>
 <?import javafx.scene.layout.VBox?>
+<?import javafx.scene.image.ImageView?>
+<VBox alignment="CENTER" spacing="30" styleClass="page-container"
+      stylesheets="@/styles/main.css" xmlns:fx="http://javafx.com/fxml/1" xmlns="http://javafx.com/javafx/21"
+      fx:controller="client.AuthentificationController">
+    <children>
+        <ImageView fitHeight="64.0" fitWidth="64.0" pickOnBounds="true" preserveRatio="true">
+            </ImageView>
+        <Label text="Connexion au Serveur" styleClass="view-title"/>
 
-<!-- Root VBox uses connexion-container for specific styling. page-container provides global defaults. -->
-<!-- Spacing is now controlled by the connexion-container CSS class -->
-<VBox fx:id="connexionServeurRootPane" styleClass="page-container, connexion-container" alignment="CENTER" prefHeight="350.0" prefWidth="400.0" stylesheets="@styles/main.css" xmlns="http://javafx.com/javafx/23.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="client.AuthentificationController">
-   <children>
-      <Label styleClass="main-title" text="Bienvenue sur l'application de réunion" />
-      <Label styleClass="ip-label" text="Adresse IP Serveur" />
-      <!-- TextField now uses standard height and more descriptive prompt text -->
-      <TextField fx:id="txtIpServeur" styleClass="styled-text-field" maxWidth="250.0" prefHeight="40.0" promptText="Adresse IP du serveur" />
-      <!-- Button size is now controlled by its ID style in CSS (#btnConnexionServeur) -->
-      <Button fx:id="btnConnexionServeur" mnemonicParsing="false" onAction="#handleClickConnexionServeur" text="Connexion au serveur" />
-   </children>
+        <VBox spacing="10" alignment="CENTER_LEFT" maxWidth="380">
+            <Label text="Adresse IP du Serveur" styleClass="field-label"/>
+            <TextField fx:id="txtIpServeur" promptText="ex: localhost ou 172.20.10.2" styleClass="text-input"/>
+        </VBox>
+
+        <Button fx:id="btnConnexionServeur" text="Connecter" onAction="#handleClickConnexionServeur"
+                styleClass="primary-action-button" prefWidth="220"/>
+    </children>
+    <padding>
+        <Insets top="50.0" right="50.0" bottom="50.0" left="50.0"/>
+    </padding>
 </VBox>
