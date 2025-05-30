@@ -6,6 +6,7 @@ import java.sql.SQLException;
 
 public class Database {
 
+    // CORRECTION: Utiliser le port 3307 comme défini dans docker-compose.yaml
     private static final String URL = "jdbc:mysql://localhost:3307/tpbmo_db?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC";
     private static final String USER = "tpbmo";
     private static final String PASSWORD = "tpbmo";
@@ -50,7 +51,7 @@ public class Database {
             if (e.getMessage().contains("Access denied")) {
                 System.err.println("SOLUTION: Vérifiez les identifiants de la base de données");
             } else if (e.getMessage().contains("Connection refused")) {
-                System.err.println("SOLUTION: Vérifiez que MySQL est démarré et accessible sur le port 3306");
+                System.err.println("SOLUTION: Vérifiez que MySQL est démarré et accessible sur le port 3307");
             } else if (e.getMessage().contains("Unknown database")) {
                 System.err.println("SOLUTION: Créez la base de données 'tpbmo_db' ou vérifiez son nom");
             }

@@ -14,8 +14,17 @@ public class DemandeParole {
         this.id = id;
         this.personneId = personneId;
         this.reunionId = reunionId;
-        this.heureDemande = LocalDateTime.now();
+        // CORRECTION: Utiliser le paramètre au lieu de toujours LocalDateTime.now()
+        this.heureDemande = heureDemande != null ? heureDemande : LocalDateTime.now();
         this.statut = statut;
+    }
+
+    // Constructeur pour nouvelles demandes
+    public DemandeParole(int personneId, int reunionId) {
+        this.personneId = personneId;
+        this.reunionId = reunionId;
+        this.heureDemande = LocalDateTime.now();
+        this.statut = Statut.EN_ATTENTE;
     }
 
     public int getId() {

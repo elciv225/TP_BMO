@@ -11,7 +11,7 @@ CREATE TABLE IF NOT EXISTS personne
     connecte BOOLEAN DEFAULT FALSE
 );
 
--- Table Reunion
+-- Table Reunion (avec colonnes de statut ajoutées)
 CREATE TABLE IF NOT EXISTS reunion
 (
     id              INT AUTO_INCREMENT PRIMARY KEY,
@@ -22,7 +22,10 @@ CREATE TABLE IF NOT EXISTS reunion
     duree           INT                                       NOT NULL,
     type            ENUM ('STANDARD','PRIVEE','DEMOCRATIQUE') NOT NULL,
     organisateur_id INT                                       NOT NULL,
-    animateur_id    INT
+    animateur_id    INT,
+    statut          ENUM ('PLANIFIEE','OUVERTE','FERMEE')     DEFAULT 'PLANIFIEE',
+    heure_ouverture DATETIME NULL,
+    heure_fermeture DATETIME NULL
 );
 
 -- Table pour l'association entre personnes et réunions (participation)
@@ -62,26 +65,28 @@ CREATE TABLE IF NOT EXISTS message
     heure_envoi TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- Nouvelle table pour les invitations en attente
+-- Table pour les invitations en attente
 CREATE TABLE IF NOT EXISTS invitation_reunion
 (
     id                  INT AUTO_INCREMENT PRIMARY KEY,
     reunion_id          INT NOT NULL,
     personne_invitee_id INT NOT NULL,
-    inviteur_id         INT NOT NULL,                          -- Qui a envoyé l'invitation
+    inviteur_id         INT NOT NULL,
     statut              ENUM ('EN_ATTENTE', 'ACCEPTEE', 'REFUSEE') DEFAULT 'EN_ATTENTE',
     date_invitation     TIMESTAMP                                  DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (reunion_id) REFERENCES reunion (id) ON DELETE CASCADE,
     FOREIGN KEY (personne_invitee_id) REFERENCES personne (id) ON DELETE CASCADE,
     FOREIGN KEY (inviteur_id) REFERENCES personne (id) ON DELETE CASCADE,
-    UNIQUE KEY uk_invitation (reunion_id, personne_invitee_id) -- Un utilisateur ne peut être invité qu'une fois à la même réunion
+    UNIQUE KEY uk_invitation (reunion_id, personne_invitee_id)
 );
 
+-- Données de test
 INSERT INTO personne (nom, prenom, login, password, connecte)
 VALUES ('Assy', 'Eliel Onésime', 'eassy', 'eassy', FALSE),
        ('Ouattara', 'Katié Myriam', 'okatie', 'okatie', FALSE),
-       ('Logbo', 'Zoukou Axelle', 'azoukou', 'azoukou', FALSE);
-
+       ('Logbo', 'Zoukou Axelle', 'azoukou', 'azoukou', FALSE),
+       ('Animateur', 'Test', 'animateur', 'animateur', FALSE),
+       ('Demo', 'User', 'demo', 'demo', FALSE);
 
 -- 2. Ajout des contraintes de clés étrangères
 
@@ -120,3 +125,8 @@ ALTER TABLE message
     ADD CONSTRAINT fk_message_reunion
         FOREIGN KEY (reunion_id) REFERENCES reunion (id) ON DELETE CASCADE;
 
+-- 3. Mise à jour pour les installations existantes
+-- Ces requêtes peuvent échouer si les colonnes existent déjà, c'est normal
+ALTER TABLE reunion ADD COLUMN statut ENUM ('PLANIFIEE','OUVERTE','FERMEE') DEFAULT 'PLANIFIEE';
+ALTER TABLE reunion ADD COLUMN heure_ouverture DATETIME NULL;
+ALTER TABLE reunion ADD COLUMN heure_fermeture DATETIME NULL;
