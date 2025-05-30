@@ -7,6 +7,9 @@ import model.Personne;
 import model.PersonneManager;
 import model.Reunion;
 import model.ReunionManager;
+import model.DemandeParole;
+import model.DemandeParoleManager;
+import model.AutorisationReunionPriveeManager; // Import manquait
 import org.json.JSONArray;
 import org.json.JSONObject;
 
@@ -76,6 +79,43 @@ public class ReunionService implements WebSocketAction {
                     break;
                 case "updateInvitationStatus":
                     mettreAJourStatutInvitation(data, session);
+                    actionEnvoieSaPropreReponse = true;
+                    break;
+                case "ouvrirReunion":
+                    reponseStr = ouvrirReunionAction(data, session);
+                    // actionEnvoieSaPropreReponse = true; // ouvrirReunionAction will send its own response and broadcast
+                    break;
+                case "cloturerReunion":
+                    reponseStr = cloturerReunionAction(data, session);
+                    // actionEnvoieSaPropreReponse = true; // cloturerReunionAction will send its own response and broadcast
+                    break;
+                case "modifierReunion":
+                    // modifierReunionAction will send its own response and broadcast
+                    modifierReunionAction(data, session);
+                    actionEnvoieSaPropreReponse = true;
+                    break;
+                case "definirAnimateur":
+                    definirAnimateurAction(data, session);
+                    actionEnvoieSaPropreReponse = true;
+                    break;
+                case "demanderParole":
+                    demanderParoleAction(data, session);
+                    actionEnvoieSaPropreReponse = true;
+                    break;
+                case "accorderParole":
+                    accorderParoleAction(data, session);
+                    actionEnvoieSaPropreReponse = true;
+                    break;
+                case "refuserParole":
+                    refuserParoleAction(data, session);
+                    actionEnvoieSaPropreReponse = true;
+                    break;
+                case "cederParole":
+                    cederParoleAction(data, session);
+                    actionEnvoieSaPropreReponse = true;
+                    break;
+                case "getDemandesParole":
+                    getDemandesParoleAction(data, session);
                     actionEnvoieSaPropreReponse = true;
                     break;
                 default:
@@ -152,7 +192,8 @@ public class ReunionService implements WebSocketAction {
                    .put("debut", nouvelleReunion.getDebut().toString())
                    .put("duree", nouvelleReunion.getDuree())
                    .put("type", nouvelleReunion.getType().toString())
-                   .put("idOrganisateur", nouvelleReunion.getIdOrganisateur());
+                   .put("idOrganisateur", nouvelleReunion.getIdOrganisateur())
+                   .put("statutReunion", nouvelleReunion.getStatutReunion().toString()); // Ajout du statut
         reponseJson.put("reunion", reunionData).put("autoJoin", true);
         return reponseJson.toString();
     }
@@ -174,81 +215,122 @@ public class ReunionService implements WebSocketAction {
             return reponseJson.toString();
         }
 
+        ReunionManager reunionManager = new ReunionManager();
+        Reunion reunion = null;
         int reunionId = -1;
-        String nomReunionTrouve = null;
-        int organisateurId = -1;
 
-        try (Connection conn = Database.getConnection(); //
-             PreparedStatement stmtFindReunion = prepareStatementForReunionLookup(conn, codeOuId)) {
-
-            if (stmtFindReunion == null) { // Cas où codeOuId n'est ni un int ni une string valide pour la recherche
-                 reponseJson.put("statut", "echec").put("message", "Format de code/ID de réunion invalide.");
-                 return reponseJson.toString();
-            }
-
-            try (ResultSet rs = stmtFindReunion.executeQuery()) {
-                if (rs.next()) {
-                    reunionId = rs.getInt("id");
-                    nomReunionTrouve = rs.getString("nom");
-                    organisateurId = rs.getInt("organisateur_id");
-                }
+        try {
+            reunionId = Integer.parseInt(codeOuId);
+            reunion = reunionManager.consulterDetailsReunion(reunionId);
+        } catch (NumberFormatException e) {
+            reunion = reunionManager.rechercherReunionParNom(codeOuId);
+            if (reunion != null) {
+                reunionId = reunion.getId();
             }
         }
 
-
-        if (reunionId == -1) {
+        if (reunion == null) {
             reponseJson.put("statut", "echec").put("message", "Réunion non trouvée: " + codeOuId);
             return reponseJson.toString();
         }
 
+        // --- Contrôle d'accès pour les réunions PRIVEE ---
+        if (reunion.getType() == Reunion.Type.PRIVEE) {
+            boolean isUserOrganizer = (userId == reunion.getIdOrganisateur());
+            boolean isUserAnimator = (reunion.getIdAnimateur() != null && userId == reunion.getIdAnimateur());
+
+            if (!isUserOrganizer && !isUserAnimator) { // Si l'utilisateur n'est ni organisateur ni animateur
+                AutorisationReunionPriveeManager autorisationManager = new AutorisationReunionPriveeManager();
+                if (!autorisationManager.estAutorise(userId, reunion.getId())) {
+                    reponseJson.put("statut", "echec").put("message", "Accès refusé. Cette réunion est privée et vous n'êtes pas sur la liste des participants autorisés.");
+                    return reponseJson.toString();
+                }
+            }
+        }
+
+        // Vérifier le statut de la réunion (si elle est ouverte)
+        // Cette vérification doit permettre à l'organisateur/animateur de rejoindre même si pas encore OUVERTE pour pouvoir l'ouvrir
+        if (reunion.getStatutReunion() != Reunion.StatutReunion.OUVERTE) {
+            boolean isOrganizer = (userId == reunion.getIdOrganisateur()); // Répétition, mais OK pour clarté ici
+            boolean isAnimator = (reunion.getIdAnimateur() != null && userId == reunion.getIdAnimateur()); // Répétition
+            if (!isOrganizer && !isAnimator) {
+                reponseJson.put("statut", "echec").put("message", "La réunion n'est pas encore ouverte.");
+                return reponseJson.toString();
+            }
+            // Si c'est l'organisateur ou l'animateur, on le laisse rejoindre même si pas OUVERTE (pour qu'il puisse l'ouvrir)
+        }
+
         ParticipationManager participationManager = new ParticipationManager();
-        participationManager.entrerDansReunion(userId, reunionId); //
+        participationManager.entrerDansReunion(userId, reunion.getId());
 
         reponseJson.put("statut", "succes");
-        reponseJson.put("message", "Vous avez rejoint la réunion " + nomReunionTrouve);
-        reponseJson.put("reunionId", reunionId);
-        reponseJson.put("nomReunion", nomReunionTrouve);
-        reponseJson.put("organisateurId", organisateurId);
+        reponseJson.put("message", "Vous avez rejoint la réunion " + reunion.getNom());
+        reponseJson.put("reunionId", reunion.getId());
+        reponseJson.put("nomReunion", reunion.getNom());
+        reponseJson.put("organisateurId", reunion.getIdOrganisateur());
+        reponseJson.put("statutReunion", reunion.getStatutReunion().toString()); // Ajout du statut dans la réponse
 
         if (session != null && session.isOpen()) {
-            session.getUserProperties().put("reunionId", String.valueOf(reunionId));
+            session.getUserProperties().put("reunionId", String.valueOf(reunion.getId()));
             session.getUserProperties().put("userId", String.valueOf(userId));
         }
         return reponseJson.toString();
     }
 
+    // prepareStatementForReunionLookup n'est plus nécessaire car on utilise ReunionManager
+    /* 
     private PreparedStatement prepareStatementForReunionLookup(Connection conn, String codeOuId) throws SQLException {
         try {
             int idPotentiel = Integer.parseInt(codeOuId);
-            PreparedStatement stmt = conn.prepareStatement("SELECT id, nom, organisateur_id FROM reunion WHERE id = ?");
+            PreparedStatement stmt = conn.prepareStatement("SELECT id, nom, organisateur_id, statut_reunion FROM reunion WHERE id = ?");
             stmt.setInt(1, idPotentiel);
             return stmt;
         } catch (NumberFormatException e) {
-            PreparedStatement stmt = conn.prepareStatement("SELECT id, nom, organisateur_id FROM reunion WHERE nom = ?");
+            PreparedStatement stmt = conn.prepareStatement("SELECT id, nom, organisateur_id, statut_reunion FROM reunion WHERE nom = ?");
             stmt.setString(1, codeOuId);
             return stmt;
         }
-    }
-
+    } */
 
     private String obtenirDetailsReunion(JSONObject data) throws SQLException {
         JSONObject reponseJson = new JSONObject();
         reponseJson.put("modele", "reunion").put("action", "reponseDetails");
         int reunionId = data.optInt("id");
         ReunionManager reunionManager = new ReunionManager();
-        Reunion reunion = reunionManager.consulterDetailsReunion(reunionId); //
+        Reunion reunion = reunionManager.consulterDetailsReunion(reunionId);
 
         if (reunion != null) {
             reponseJson.put("statut", "succes");
             JSONObject rData = new JSONObject();
             rData.put("id", reunion.getId()).put("nom", reunion.getNom()).put("sujet", reunion.getSujet())
-                 .put("debut", reunion.getDebut().toString()).put("duree", reunion.getDuree());
+                 .put("debut", reunion.getDebut().toString()).put("duree", reunion.getDuree())
+                 .put("statutReunion", reunion.getStatutReunion().toString()); // Ajout du statut
             reponseJson.put("reunion", rData);
         } else {
             reponseJson.put("statut", "echec").put("message", "Réunion non trouvée");
         }
         return reponseJson.toString();
     }
+
+    // REMOVING DUPLICATE METHOD - The first one is more up-to-date.
+    // private String obtenirDetailsReunion(JSONObject data) throws SQLException {
+    //     JSONObject reponseJson = new JSONObject();
+    //     reponseJson.put("modele", "reunion").put("action", "reponseDetails");
+    //     int reunionId = data.optInt("id");
+    //     ReunionManager reunionManager = new ReunionManager();
+    //     Reunion reunion = reunionManager.consulterDetailsReunion(reunionId); //
+    //
+    //     if (reunion != null) {
+    //         reponseJson.put("statut", "succes");
+    //         JSONObject rData = new JSONObject();
+    //         rData.put("id", reunion.getId()).put("nom", reunion.getNom()).put("sujet", reunion.getSujet())
+    //              .put("debut", reunion.getDebut().toString()).put("duree", reunion.getDuree());
+    //         reponseJson.put("reunion", rData);
+    //     } else {
+    //         reponseJson.put("statut", "echec").put("message", "Réunion non trouvée");
+    //     }
+    //     return reponseJson.toString();
+    // }
 
     private void envoyerMessage(JSONObject data, Session currentSession) throws IOException, SQLException {
         String reunionIdStr = data.optString("reunionId");
@@ -261,33 +343,60 @@ public class ReunionService implements WebSocketAction {
         }
         int userId = Integer.parseInt(userIdStr);
         int reunionId = Integer.parseInt(reunionIdStr);
-        String senderName = "Inconnu";
 
-        try (Connection conn = Database.getConnection(); //
-             PreparedStatement psUser = conn.prepareStatement("SELECT prenom, nom FROM personne WHERE id = ?")) {
-            psUser.setInt(1, userId);
-            try (ResultSet rsUser = psUser.executeQuery()) {
-                if (rsUser.next()) {
-                    senderName = (rsUser.getString("prenom") + " " + rsUser.getString("nom")).trim();
-                    if (senderName.isEmpty()) senderName = "Utilisateur " + userId;
-                } else {
-                     currentSession.getBasicRemote().sendText(genererReponseErreur("Utilisateur expéditeur non trouvé.").toString());
-                     return;
-                }
-            }
-            try (PreparedStatement psMsg = conn.prepareStatement("INSERT INTO message (personne_id, reunion_id, contenu, heure_envoi) VALUES (?, ?, ?, NOW())")) {
-                psMsg.setInt(1, userId);
-                psMsg.setInt(2, reunionId);
-                psMsg.setString(3, contenu);
-                psMsg.executeUpdate();
-            }
+        // --- Modification pour Demande de Parole (restriction d'envoi) ---
+        ReunionManager reunionManager = new ReunionManager(); // Gardé pour vérifier type de réunion
+        Reunion reunion = reunionManager.consulterDetailsReunion(reunionId);
+        if (reunion == null) {
+            currentSession.getBasicRemote().sendText(genererReponseErreur("Réunion non trouvée pour l'envoi de message.").toString());
+            return;
         }
 
-        JSONObject broadcastJson = new JSONObject();
-        broadcastJson.put("type", "newMessage").put("reunionId", reunionIdStr).put("sender", senderName)
-                     .put("content", contenu).put("userId", userIdStr).put("timestamp", System.currentTimeMillis());
+        DemandeParoleManager demandeParoleManager = new DemandeParoleManager();
+        DemandeParole demandeActuelle = demandeParoleManager.obtenirDemandeActuelle(reunionId);
 
-        for (Session s : ServeurWebSocket.getSessions()) { //
+        if (demandeActuelle != null && demandeActuelle.getPersonneId() != userId) {
+            if (reunion.getType() == Reunion.Type.STANDARD || reunion.getType() == Reunion.Type.PRIVEE) {
+                 currentSession.getBasicRemote().sendText(genererReponseErreur("Vous n'avez pas la parole actuellement.").toString());
+                 return;
+            }
+        }
+        // --- Fin de la modification pour Demande de Parole ---
+
+        // Utilisation de PersonneManager pour obtenir les détails de l'expéditeur
+        PersonneManager personneManager = new PersonneManager();
+        Personne sender = personneManager.obtenirPersonneParId(userId);
+        String senderName;
+        if (sender != null) {
+            senderName = (sender.getPrenom() + " " + sender.getNom()).trim();
+            if (senderName.isEmpty()) {
+                senderName = "Utilisateur " + userId;
+            }
+        } else {
+            currentSession.getBasicRemote().sendText(genererReponseErreur("Utilisateur expéditeur non trouvé.").toString());
+            return;
+        }
+
+        // Utilisation de MessageManager pour créer le message
+        MessageManager messageManager = new MessageManager();
+        Message nouveauMessage = messageManager.creerMessage(userId, reunionId, contenu);
+
+        if (nouveauMessage == null) {
+            currentSession.getBasicRemote().sendText(genererReponseErreur("Échec de l'enregistrement du message.").toString());
+            return;
+        }
+
+        // Préparation du message pour le broadcast
+        JSONObject broadcastJson = new JSONObject();
+        broadcastJson.put("type", "newMessage");
+        broadcastJson.put("reunionId", reunionIdStr); // ou String.valueOf(reunionId)
+        broadcastJson.put("sender", senderName);
+        broadcastJson.put("content", nouveauMessage.getContenu());
+        broadcastJson.put("userId", userIdStr); // ou String.valueOf(userId)
+        // Utiliser le timestamp de la base de données pour la cohérence
+        broadcastJson.put("timestamp", nouveauMessage.getHeureEnvoi().toInstant(ZoneOffset.UTC).toEpochMilli());
+
+        for (Session s : ServeurWebSocket.getSessions()) {
             if (s.isOpen() && reunionIdStr.equals(s.getUserProperties().get("reunionId"))) {
                 try { s.getBasicRemote().sendText(broadcastJson.toString()); }
                 catch (IOException e) { System.err.println("Erreur diffusion msg à " + s.getId() + ": " + e.getMessage());}
@@ -486,7 +595,7 @@ public class ReunionService implements WebSocketAction {
         }
         JSONArray reunionsArray = new JSONArray();
         try (Connection conn = Database.getConnection()){ //
-            String sql = "SELECT DISTINCT r.id, r.nom, r.sujet, r.agenda, r.debut, r.duree, r.type, r.organisateur_id, r.animateur_id " +
+            String sql = "SELECT DISTINCT r.id, r.nom, r.sujet, r.agenda, r.debut, r.duree, r.type, r.organisateur_id, r.animateur_id, r.statut_reunion " +
                          "FROM reunion r LEFT JOIN participation p ON r.id = p.reunion_id " +
                          "WHERE r.organisateur_id = ? OR p.personne_id = ? " +
                          "ORDER BY r.debut DESC";
@@ -504,6 +613,7 @@ public class ReunionService implements WebSocketAction {
                         rJson.put("type", rs.getString("type"));
                         rJson.put("idOrganisateur", rs.getInt("organisateur_id"));
                         rJson.put("idAnimateur", rs.getObject("animateur_id") == null ? JSONObject.NULL : rs.getInt("animateur_id"));
+                        rJson.put("statutReunion", rs.getString("statut_reunion")); // Ajout du statut
                         reunionsArray.put(rJson);
                     }
                 }
@@ -640,4 +750,582 @@ public class ReunionService implements WebSocketAction {
         errorJson.put("message", message);
         return errorJson;
     }
+
+    private String ouvrirReunionAction(JSONObject data, Session session) throws SQLException, IOException {
+        JSONObject responseJson = new JSONObject();
+        responseJson.put("type", "reunionOuverte"); // Le client s'attend à "type" pour les réponses d'action directe
+
+        int reunionId = data.optInt("reunionId", -1);
+        int userId = data.optInt("userId", -1); // ou récupérer depuis session.getUserProperties() si fiable
+
+        if (reunionId == -1 || userId == -1) {
+            responseJson.put("statut", "echec").put("message", "ID de réunion ou d'utilisateur manquant.");
+            session.getBasicRemote().sendText(responseJson.toString());
+            return responseJson.toString(); // Retourner pour éviter le traitement ultérieur
+        }
+
+        ReunionManager reunionManager = new ReunionManager();
+        boolean success = reunionManager.ouvrirReunion(reunionId, userId);
+
+        if (success) {
+            responseJson.put("statut", "succes").put("reunionId", reunionId).put("message", "Réunion ouverte avec succès.");
+            session.getBasicRemote().sendText(responseJson.toString());
+
+            // Broadcast aux participants
+            JSONObject broadcastJson = new JSONObject();
+            broadcastJson.put("type", "meetingStatusUpdate");
+            broadcastJson.put("reunionId", reunionId);
+            broadcastJson.put("status", "OUVERTE");
+            broadcastToParticipants(reunionId, broadcastJson.toString());
+        } else {
+            responseJson.put("statut", "echec").put("reunionId", reunionId).put("message", "Impossible d'ouvrir la réunion (non autorisé ou erreur).");
+            session.getBasicRemote().sendText(responseJson.toString());
+        }
+        return responseJson.toString(); // Nécessaire car la méthode doit retourner une String
+    }
+
+    private String cloturerReunionAction(JSONObject data, Session session) throws SQLException, IOException {
+        JSONObject responseJson = new JSONObject();
+        responseJson.put("type", "reunionCloturee");
+
+        int reunionId = data.optInt("reunionId", -1);
+        int userId = data.optInt("userId", -1); // ou récupérer depuis session.getUserProperties()
+
+        if (reunionId == -1 || userId == -1) {
+            responseJson.put("statut", "echec").put("message", "ID de réunion ou d'utilisateur manquant.");
+            session.getBasicRemote().sendText(responseJson.toString());
+            return responseJson.toString();
+        }
+
+        ReunionManager reunionManager = new ReunionManager();
+        boolean success = reunionManager.cloturerReunion(reunionId, userId);
+
+        if (success) {
+            responseJson.put("statut", "succes").put("reunionId", reunionId).put("message", "Réunion clôturée avec succès.");
+            session.getBasicRemote().sendText(responseJson.toString());
+
+            // Broadcast aux participants
+            JSONObject broadcastJson = new JSONObject();
+            broadcastJson.put("type", "meetingStatusUpdate");
+            broadcastJson.put("reunionId", reunionId);
+            broadcastJson.put("status", "CLOTUREE");
+            broadcastToParticipants(reunionId, broadcastJson.toString());
+        } else {
+            responseJson.put("statut", "echec").put("reunionId", reunionId).put("message", "Impossible de clôturer la réunion (non autorisé ou erreur).");
+            session.getBasicRemote().sendText(responseJson.toString());
+        }
+        return responseJson.toString(); // Nécessaire
+    }
+
+    private void broadcastToParticipants(int reunionId, String message) {
+        String reunionIdStr = String.valueOf(reunionId);
+        for (Session s : ServeurWebSocket.getSessions()) {
+            if (s.isOpen() && reunionIdStr.equals(s.getUserProperties().get("reunionId"))) {
+                try {
+                    s.getBasicRemote().sendText(message);
+                } catch (IOException e) {
+                    System.err.println("Erreur lors du broadcast aux participants de la réunion " + reunionId + ": " + e.getMessage());
+                }
+            }
+        }
+    }
+
+    private void modifierReunionAction(JSONObject data, Session session) throws SQLException, IOException {
+        JSONObject responseJson = new JSONObject();
+        responseJson.put("type", "reponseModifierReunion"); // Consistent with how other direct actions send responses
+
+        int reunionId = data.optInt("reunionId", -1);
+        String userIdStr = (String) session.getUserProperties().get("userId");
+
+        if (reunionId == -1 || userIdStr == null) {
+            responseJson.put("statut", "echec").put("message", "ID de réunion ou d'utilisateur manquant pour la modification.");
+            session.getBasicRemote().sendText(responseJson.toString());
+            return;
+        }
+        int userId = Integer.parseInt(userIdStr);
+
+        String nom = data.optString("nom");
+        String sujet = data.optString("sujet");
+        String agenda = data.optString("agenda");
+        String debutStr = data.optString("debut");
+        int duree = data.optInt("duree", -1);
+
+        // Basic validation for required fields for modification
+        if (nom.isEmpty() || debutStr.isEmpty() || duree == -1) {
+            responseJson.put("statut", "echec").put("message", "Les champs nom, debut et duree sont obligatoires pour la modification.");
+            session.getBasicRemote().sendText(responseJson.toString());
+            return;
+        }
+
+        LocalDateTime debutLocalDateTime;
+        try {
+            debutLocalDateTime = LocalDateTime.parse(debutStr);
+        } catch (Exception e) {
+            responseJson.put("statut", "echec").put("message", "Format de date 'debut' invalide. Utilisez le format ISO (YYYY-MM-DDTHH:MM:SS).");
+            session.getBasicRemote().sendText(responseJson.toString());
+            return;
+        }
+
+        ReunionManager reunionManager = new ReunionManager();
+        Reunion reunionExistante = reunionManager.consulterDetailsReunion(reunionId);
+
+        if (reunionExistante == null) {
+            responseJson.put("statut", "echec").put("message", "Réunion non trouvée.");
+            session.getBasicRemote().sendText(responseJson.toString());
+            return;
+        }
+
+        if (reunionExistante.getIdOrganisateur() != userId) {
+            responseJson.put("statut", "echec").put("message", "Non autorisé. Seul l'organisateur peut modifier la réunion.");
+            session.getBasicRemote().sendText(responseJson.toString());
+            return;
+        }
+
+        boolean success = reunionManager.modifierReunion(reunionId, nom, sujet, agenda, debutLocalDateTime, duree);
+
+        if (success) {
+            responseJson.put("statut", "succes").put("message", "Réunion modifiée avec succès.");
+            session.getBasicRemote().sendText(responseJson.toString());
+
+            Reunion reunionModifiee = reunionManager.consulterDetailsReunion(reunionId);
+            if (reunionModifiee != null) {
+                JSONObject detailsReunionJson = new JSONObject();
+                detailsReunionJson.put("id", reunionModifiee.getId());
+                detailsReunionJson.put("nom", reunionModifiee.getNom());
+                detailsReunionJson.put("sujet", reunionModifiee.getSujet());
+                detailsReunionJson.put("agenda", reunionModifiee.getAgenda());
+                detailsReunionJson.put("debut", reunionModifiee.getDebut().toString());
+                detailsReunionJson.put("duree", reunionModifiee.getDuree());
+                detailsReunionJson.put("type", reunionModifiee.getType().toString());
+                detailsReunionJson.put("idOrganisateur", reunionModifiee.getIdOrganisateur());
+                if (reunionModifiee.getIdAnimateur() != null) {
+                    detailsReunionJson.put("idAnimateur", reunionModifiee.getIdAnimateur());
+                } else {
+                    detailsReunionJson.put("idAnimateur", JSONObject.NULL);
+                }
+                detailsReunionJson.put("statutReunion", reunionModifiee.getStatutReunion().toString());
+
+                JSONObject broadcastJson = new JSONObject();
+                broadcastJson.put("type", "meetingDetailsUpdated");
+                broadcastJson.put("reunionId", reunionId);
+                broadcastJson.put("details", detailsReunionJson);
+                broadcastToParticipants(reunionId, broadcastJson.toString());
+            }
+        } else {
+            responseJson.put("statut", "echec").put("message", "Échec de la modification de la réunion.");
+            session.getBasicRemote().sendText(responseJson.toString());
+        }
+    }
+
+    private void definirAnimateurAction(JSONObject data, Session session) throws SQLException, IOException {
+        JSONObject responseJson = new JSONObject();
+        responseJson.put("type", "reponseDefinirAnimateur");
+
+        int reunionId = data.optInt("reunionId", -1);
+        int animateurIdToSet = data.optInt("animateurIdToSet", -1);
+        String userIdStr = (String) session.getUserProperties().get("userId"); // Organizer's ID
+
+        if (reunionId == -1 || animateurIdToSet == -1 || userIdStr == null) {
+            responseJson.put("statut", "echec").put("message", "ID de réunion, ID animateur ou ID utilisateur (organisateur) manquant.");
+            session.getBasicRemote().sendText(responseJson.toString());
+            return;
+        }
+        int organizerId = Integer.parseInt(userIdStr);
+
+        ReunionManager reunionManager = new ReunionManager();
+        PersonneManager personneManager = new PersonneManager();
+
+        Reunion reunion = reunionManager.consulterDetailsReunion(reunionId);
+        if (reunion == null) {
+            responseJson.put("statut", "echec").put("message", "Réunion non trouvée.");
+            session.getBasicRemote().sendText(responseJson.toString());
+            return;
+        }
+
+        if (reunion.getIdOrganisateur() != organizerId) {
+            responseJson.put("statut", "echec").put("message", "Non autorisé. Seul l'organisateur peut désigner un animateur.");
+            session.getBasicRemote().sendText(responseJson.toString());
+            return;
+        }
+
+        Personne animateur = personneManager.obtenirPersonneParId(animateurIdToSet);
+        if (animateur == null) {
+            responseJson.put("statut", "echec").put("message", "Utilisateur animateur non trouvé.");
+            session.getBasicRemote().sendText(responseJson.toString());
+            return;
+        }
+
+        boolean success = reunionManager.definirAnimateur(reunionId, animateurIdToSet);
+
+        if (success) {
+            responseJson.put("statut", "succes").put("message", "Animateur désigné avec succès.");
+            session.getBasicRemote().sendText(responseJson.toString());
+
+            // Broadcast update to all participants
+            JSONObject broadcastJson = new JSONObject();
+            broadcastJson.put("type", "animateurUpdated");
+            broadcastJson.put("reunionId", reunionId);
+            broadcastJson.put("animateurId", animateurIdToSet);
+            broadcastToParticipants(reunionId, broadcastJson.toString());
+
+            // Optional: Notify the new animator specifically if they are connected
+            for (Session s : ServeurWebSocket.getSessions()) {
+                if (s.isOpen() && String.valueOf(animateurIdToSet).equals(s.getUserProperties().get("userId"))) {
+                    JSONObject notificationAnimateur = new JSONObject();
+                    notificationAnimateur.put("type", "notificationNouveauRole");
+                    notificationAnimateur.put("reunionId", reunionId);
+                    notificationAnimateur.put("nomReunion", reunion.getNom());
+                    notificationAnimateur.put("role", "animateur");
+                    notificationAnimateur.put("message", "Vous avez été désigné(e) comme animateur pour la réunion : " + reunion.getNom());
+                    try {
+                        s.getBasicRemote().sendText(notificationAnimateur.toString());
+                    } catch (IOException e) {
+                        System.err.println("Erreur lors de l'envoi de la notification de nouveau rôle à l'animateur " + animateurIdToSet + ": " + e.getMessage());
+                    }
+                    break; 
+                }
+            }
+
+        } else {
+            responseJson.put("statut", "echec").put("message", "Échec de la désignation de l'animateur.");
+            session.getBasicRemote().sendText(responseJson.toString());
+        }
+    }
+
+    // --- Début des méthodes pour Demande de Parole ---
+
+    private JSONObject demandToJSON(DemandeParole demande) throws SQLException {
+        if (demande == null) return null;
+        JSONObject json = new JSONObject();
+        json.put("id", demande.getId());
+        json.put("personneId", demande.getPersonneId());
+        json.put("reunionId", demande.getReunionId());
+        json.put("heureDemande", demande.getHeureDemande() != null ? demande.getHeureDemande().toString() : JSONObject.NULL);
+        json.put("statut", demande.getStatutDemande().toString());
+
+        PersonneManager personneManager = new PersonneManager();
+        Personne personne = personneManager.obtenirPersonneParId(demande.getPersonneId());
+        json.put("nomPersonne", personne != null ? (personne.getPrenom() + " " + personne.getNom()).trim() : "Inconnu");
+        return json;
+    }
+    
+    private JSONObject getCurrentSpeakerInfo(int reunionId) throws SQLException {
+        DemandeParoleManager demandeParoleManager = new DemandeParoleManager();
+        DemandeParole demandeActuelle = demandeParoleManager.obtenirDemandeActuelle(reunionId);
+        if (demandeActuelle != null) {
+            PersonneManager personneManager = new PersonneManager();
+            Personne speaker = personneManager.obtenirPersonneParId(demandeActuelle.getPersonneId());
+            if (speaker != null) {
+                JSONObject speakerInfo = new JSONObject();
+                speakerInfo.put("userId", speaker.getId());
+                speakerInfo.put("nomUser", (speaker.getPrenom() + " " + speaker.getNom()).trim());
+                speakerInfo.put("demandeId", demandeActuelle.getId());
+                return speakerInfo;
+            }
+        }
+        return null;
+    }
+
+    private void accorderProchaineParoleAutomatiquement(int reunionId, Session sessionForContext) throws SQLException, IOException {
+        DemandeParoleManager demandeParoleManager = new DemandeParoleManager();
+        DemandeParole prochaineDemande = demandeParoleManager.obtenirProchaineDemandeAutomatique(reunionId);
+
+        if (prochaineDemande != null) {
+            demandeParoleManager.changerStatutDemande(prochaineDemande.getId(), DemandeParole.StatutDemande.ACCORDEE);
+            
+            PersonneManager personneManager = new PersonneManager();
+            Personne personneAccordo = personneManager.obtenirPersonneParId(prochaineDemande.getPersonneId());
+            String nomPersonneAccordo = "Inconnu";
+            if (personneAccordo != null) {
+                nomPersonneAccordo = (personneAccordo.getPrenom() + " " + personneAccordo.getNom()).trim();
+            }
+
+            JSONObject broadcastMsg = new JSONObject();
+            broadcastMsg.put("type", "paroleAccordee");
+            broadcastMsg.put("reunionId", reunionId);
+            broadcastMsg.put("userId", prochaineDemande.getPersonneId());
+            broadcastMsg.put("nomUser", nomPersonneAccordo);
+            broadcastMsg.put("demandeId", prochaineDemande.getId());
+            broadcastToParticipants(reunionId, broadcastMsg.toString());
+        }
+    }
+
+    private void demanderParoleAction(JSONObject data, Session session) throws SQLException, IOException {
+        JSONObject responseJson = new JSONObject().put("type", "reponseDemanderParole");
+        int reunionId = data.optInt("reunionId", -1);
+        String userIdStr = (String) session.getUserProperties().get("userId");
+
+        if (reunionId == -1 && session.getUserProperties().containsKey("reunionId")) {
+            reunionId = Integer.parseInt((String) session.getUserProperties().get("reunionId"));
+        }
+        
+        if (reunionId == -1 || userIdStr == null) {
+            responseJson.put("statut", "echec").put("message", "ID Réunion ou utilisateur manquant.");
+            session.getBasicRemote().sendText(responseJson.toString());
+            return;
+        }
+        int userId = Integer.parseInt(userIdStr);
+
+        DemandeParoleManager demandeMgr = new DemandeParoleManager();
+        // Vérifier si l'utilisateur a déjà une demande EN_ATTENTE ou ACCORDEE
+        if (demandeMgr.obtenirDemandeParPersonneEtReunion(userId, reunionId, DemandeParole.StatutDemande.EN_ATTENTE) != null ||
+            demandeMgr.obtenirDemandeParPersonneEtReunion(userId, reunionId, DemandeParole.StatutDemande.ACCORDEE) != null) {
+            responseJson.put("statut", "echec").put("message", "Vous avez déjà une demande de parole en attente ou la parole vous est déjà accordée.");
+            session.getBasicRemote().sendText(responseJson.toString());
+            return;
+        }
+
+        try {
+            DemandeParole nouvelleDemande = demandeMgr.creerDemande(userId, reunionId);
+            responseJson.put("statut", "succes").put("message", "Demande de parole enregistrée.").put("demande", demandToJSON(nouvelleDemande));
+            session.getBasicRemote().sendText(responseJson.toString());
+
+            ReunionManager reunionMgr = new ReunionManager();
+            Reunion reunion = reunionMgr.consulterDetailsReunion(reunionId);
+
+            if (reunion != null) {
+                if (reunion.getType() == Reunion.Type.DEMOCRATIQUE) {
+                    if (demandeMgr.obtenirDemandeActuelle(reunionId) == null) { // Si personne ne parle
+                        accorderProchaineParoleAutomatiquement(reunionId, session);
+                    }
+                } else { // STANDARD ou PRIVEE
+                    Integer animateurId = reunion.getIdAnimateur();
+                    if (animateurId == null) animateurId = reunion.getIdOrganisateur(); // Fallback sur l'organisateur si pas d'animateur
+
+                    JSONObject notifAnimateur = new JSONObject();
+                    notifAnimateur.put("type", "nouvelleDemandeParole");
+                    notifAnimateur.put("reunionId", reunionId);
+                    notifAnimateur.put("demande", demandToJSON(nouvelleDemande));
+                    
+                    for (Session s : ServeurWebSocket.getSessions()) {
+                        if (s.isOpen() && String.valueOf(animateurId).equals(s.getUserProperties().get("userId"))) {
+                            s.getBasicRemote().sendText(notifAnimateur.toString());
+                            break; 
+                        }
+                    }
+                }
+            }
+        } catch (SQLException e) {
+             // Gérer la violation de contrainte unique (si creerDemande ne la gère pas en amont par suppression)
+            if (e.getSQLState().equals("23000")) { // Code d'erreur SQL pour violation de contrainte d'unicité
+                 responseJson.put("statut", "echec").put("message", "Impossible de créer la demande. Avez-vous déjà une demande active?");
+            } else {
+                responseJson.put("statut", "echec").put("message", "Erreur SQL: " + e.getMessage());
+            }
+            session.getBasicRemote().sendText(responseJson.toString());
+        }
+    }
+
+    private void accorderParoleAction(JSONObject data, Session session) throws SQLException, IOException {
+        JSONObject responseJson = new JSONObject().put("type", "reponseAccorderParole");
+        int demandeId = data.optInt("demandeId", -1);
+        int reunionId = data.optInt("reunionId", -1); // Utile pour le broadcast et la logique démocratique
+        String userIdStr = (String) session.getUserProperties().get("userId"); // ID de l'animateur/organisateur
+
+        if (demandeId == -1 || reunionId == -1 || userIdStr == null) {
+            responseJson.put("statut", "echec").put("message", "ID Demande, Réunion ou Animateur manquant.");
+            session.getBasicRemote().sendText(responseJson.toString());
+            return;
+        }
+        int animateurId = Integer.parseInt(userIdStr);
+
+        ReunionManager reunionMgr = new ReunionManager();
+        Reunion reunion = reunionMgr.consulterDetailsReunion(reunionId);
+        if (reunion == null) {
+             responseJson.put("statut", "echec").put("message", "Réunion non trouvée.");
+             session.getBasicRemote().sendText(responseJson.toString()); return;
+        }
+        // Vérification des permissions (seul l'animateur ou l'organisateur peut accorder)
+        if (!((reunion.getIdAnimateur() != null && reunion.getIdAnimateur() == animateurId) || reunion.getIdOrganisateur() == animateurId)) {
+            responseJson.put("statut", "echec").put("message", "Non autorisé à accorder la parole.");
+            session.getBasicRemote().sendText(responseJson.toString()); return;
+        }
+        
+        DemandeParoleManager demandeMgr = new DemandeParoleManager();
+        // Mettre la demande actuelle (si elle existe) à TERMINEE
+        DemandeParole demandeActuelle = demandeMgr.obtenirDemandeActuelle(reunionId);
+        if (demandeActuelle != null && demandeActuelle.getId() != demandeId) {
+            demandeMgr.changerStatutDemande(demandeActuelle.getId(), DemandeParole.StatutDemande.TERMINEE);
+             // Informer l'ancien speaker que sa parole est terminée (optionnel, ou géré par le client via paroleAccordee général)
+        }
+
+        boolean success = demandeMgr.changerStatutDemande(demandeId, DemandeParole.StatutDemande.ACCORDEE);
+        if (success) {
+            responseJson.put("statut", "succes").put("message", "Parole accordée.");
+            session.getBasicRemote().sendText(responseJson.toString());
+
+            DemandeParole demandeAccordee = demandeMgr.obtenirDemandeParoleParId(demandeId);
+            PersonneManager personneMgr = new PersonneManager();
+            Personne speaker = personneMgr.obtenirPersonneParId(demandeAccordee.getPersonneId());
+            String nomSpeaker = (speaker != null) ? (speaker.getPrenom() + " " + speaker.getNom()).trim() : "Inconnu";
+
+            JSONObject broadcastMsg = new JSONObject();
+            broadcastMsg.put("type", "paroleAccordee");
+            broadcastMsg.put("reunionId", reunionId);
+            broadcastMsg.put("userId", demandeAccordee.getPersonneId());
+            broadcastMsg.put("nomUser", nomSpeaker);
+            broadcastMsg.put("demandeId", demandeId);
+            broadcastToParticipants(reunionId, broadcastMsg.toString());
+        } else {
+            responseJson.put("statut", "echec").put("message", "Échec de l'accord de la parole.");
+            session.getBasicRemote().sendText(responseJson.toString());
+        }
+    }
+
+    private void refuserParoleAction(JSONObject data, Session session) throws SQLException, IOException {
+        JSONObject responseJson = new JSONObject().put("type", "reponseRefuserParole");
+        int demandeId = data.optInt("demandeId", -1);
+        String userIdStr = (String) session.getUserProperties().get("userId"); // ID de l'animateur/organisateur
+
+        if (demandeId == -1 || userIdStr == null) {
+            responseJson.put("statut", "echec").put("message", "ID Demande ou Animateur manquant.");
+            session.getBasicRemote().sendText(responseJson.toString()); return;
+        }
+        int animateurId = Integer.parseInt(userIdStr);
+        
+        DemandeParoleManager demandeMgr = new DemandeParoleManager();
+        DemandeParole demande = demandeMgr.obtenirDemandeParoleParId(demandeId);
+        if (demande == null) {
+            responseJson.put("statut", "echec").put("message", "Demande non trouvée.");
+            session.getBasicRemote().sendText(responseJson.toString()); return;
+        }
+
+        ReunionManager reunionMgr = new ReunionManager();
+        Reunion reunion = reunionMgr.consulterDetailsReunion(demande.getReunionId());
+         if (reunion == null) {
+             responseJson.put("statut", "echec").put("message", "Réunion associée à la demande non trouvée.");
+             session.getBasicRemote().sendText(responseJson.toString()); return;
+        }
+        if (!((reunion.getIdAnimateur() != null && reunion.getIdAnimateur() == animateurId) || reunion.getIdOrganisateur() == animateurId)) {
+            responseJson.put("statut", "echec").put("message", "Non autorisé à refuser la parole.");
+            session.getBasicRemote().sendText(responseJson.toString()); return;
+        }
+
+        boolean success = demandeMgr.changerStatutDemande(demandeId, DemandeParole.StatutDemande.REFUSEE);
+        if (success) {
+            responseJson.put("statut", "succes").put("message", "Demande de parole refusée.");
+            session.getBasicRemote().sendText(responseJson.toString());
+
+            // Notifier l'utilisateur spécifique
+            JSONObject notifUser = new JSONObject();
+            notifUser.put("type", "demandeParoleRefusee");
+            notifUser.put("reunionId", demande.getReunionId());
+            notifUser.put("demandeId", demandeId);
+            for (Session s : ServeurWebSocket.getSessions()) {
+                if (s.isOpen() && String.valueOf(demande.getPersonneId()).equals(s.getUserProperties().get("userId"))) {
+                    s.getBasicRemote().sendText(notifUser.toString());
+                    break;
+                }
+            }
+            // L'animateur pourrait aussi vouloir voir la liste des demandes mises à jour.
+            // On pourrait broadcaster la liste mise à jour des demandes en attente à l'animateur.
+            // Ou le client animateur rafraîchit la liste après cette action.
+        } else {
+            responseJson.put("statut", "echec").put("message", "Échec du refus de la parole.");
+            session.getBasicRemote().sendText(responseJson.toString());
+        }
+    }
+
+    private void cederParoleAction(JSONObject data, Session session) throws SQLException, IOException {
+        JSONObject responseJson = new JSONObject().put("type", "reponseCederParole");
+        int reunionId = data.optInt("reunionId", -1);
+        String userIdStr = (String) session.getUserProperties().get("userId"); // ID du speaker actuel
+
+        if (reunionId == -1 && session.getUserProperties().containsKey("reunionId")) {
+            reunionId = Integer.parseInt((String) session.getUserProperties().get("reunionId"));
+        }
+
+        if (reunionId == -1 || userIdStr == null) {
+            responseJson.put("statut", "echec").put("message", "ID Réunion ou Utilisateur manquant.");
+            session.getBasicRemote().sendText(responseJson.toString()); return;
+        }
+        int speakerId = Integer.parseInt(userIdStr);
+
+        DemandeParoleManager demandeMgr = new DemandeParoleManager();
+        DemandeParole demandeActuelle = demandeMgr.obtenirDemandeActuelle(reunionId);
+
+        if (demandeActuelle == null || demandeActuelle.getPersonneId() != speakerId) {
+            responseJson.put("statut", "echec").put("message", "Vous n'avez pas la parole actuellement ou demande non trouvée.");
+            session.getBasicRemote().sendText(responseJson.toString()); return;
+        }
+
+        boolean success = demandeMgr.changerStatutDemande(demandeActuelle.getId(), DemandeParole.StatutDemande.TERMINEE);
+        if (success) {
+            responseJson.put("statut", "succes").put("message", "Parole cédée.");
+            session.getBasicRemote().sendText(responseJson.toString());
+            
+            PersonneManager personneMgr = new PersonneManager();
+            Personne speaker = personneMgr.obtenirPersonneParId(speakerId);
+            String nomSpeaker = (speaker != null) ? (speaker.getPrenom() + " " + speaker.getNom()).trim() : "Inconnu";
+
+            JSONObject broadcastMsg = new JSONObject();
+            broadcastMsg.put("type", "paroleCedee");
+            broadcastMsg.put("reunionId", reunionId);
+            broadcastMsg.put("userId", speakerId);
+            broadcastMsg.put("nomUser", nomSpeaker);
+            broadcastMsg.put("demandeId", demandeActuelle.getId());
+            broadcastToParticipants(reunionId, broadcastMsg.toString());
+
+            ReunionManager reunionMgr = new ReunionManager();
+            Reunion reunion = reunionMgr.consulterDetailsReunion(reunionId);
+            if (reunion != null) {
+                if (reunion.getType() == Reunion.Type.DEMOCRATIQUE) {
+                    accorderProchaineParoleAutomatiquement(reunionId, session);
+                } else { // STANDARD ou PRIVEE
+                    Integer animateurId = reunion.getIdAnimateur() != null ? reunion.getIdAnimateur() : reunion.getIdOrganisateur();
+                    JSONObject notifAnimateur = new JSONObject();
+                    notifAnimateur.put("type", "paroleEstLibre");
+                    notifAnimateur.put("reunionId", reunionId);
+                     for (Session s : ServeurWebSocket.getSessions()) {
+                        if (s.isOpen() && String.valueOf(animateurId).equals(s.getUserProperties().get("userId"))) {
+                            s.getBasicRemote().sendText(notifAnimateur.toString());
+                            break; 
+                        }
+                    }
+                }
+            }
+        } else {
+            responseJson.put("statut", "echec").put("message", "Échec de la cession de la parole.");
+            session.getBasicRemote().sendText(responseJson.toString());
+        }
+    }
+
+    private void getDemandesParoleAction(JSONObject data, Session session) throws SQLException, IOException {
+        JSONObject responseJson = new JSONObject().put("type", "listeDemandesParole");
+        int reunionId = data.optInt("reunionId", -1);
+        String userIdStr = (String) session.getUserProperties().get("userId"); // ID de l'animateur/organisateur
+
+         if (reunionId == -1 && session.getUserProperties().containsKey("reunionId")) {
+            reunionId = Integer.parseInt((String) session.getUserProperties().get("reunionId"));
+        }
+
+        if (reunionId == -1 || userIdStr == null) {
+            responseJson.put("statut", "echec").put("message", "ID Réunion ou Animateur manquant.");
+            session.getBasicRemote().sendText(responseJson.toString()); return;
+        }
+        int animateurId = Integer.parseInt(userIdStr);
+
+        ReunionManager reunionMgr = new ReunionManager();
+        Reunion reunion = reunionMgr.consulterDetailsReunion(reunionId);
+         if (reunion == null) {
+             responseJson.put("statut", "echec").put("message", "Réunion non trouvée.");
+             session.getBasicRemote().sendText(responseJson.toString()); return;
+        }
+        if (!((reunion.getIdAnimateur() != null && reunion.getIdAnimateur() == animateurId) || reunion.getIdOrganisateur() == animateurId)) {
+            responseJson.put("statut", "echec").put("message", "Non autorisé.");
+            session.getBasicRemote().sendText(responseJson.toString()); return;
+        }
+        
+        DemandeParoleManager demandeMgr = new DemandeParoleManager();
+        List<DemandeParole> demandes = demandeMgr.obtenirDemandesEnAttente(reunionId);
+        JSONArray demandesJson = new JSONArray();
+        for (DemandeParole demande : demandes) {
+            demandesJson.put(demandToJSON(demande));
+        }
+        responseJson.put("statut", "succes").put("reunionId", reunionId).put("demandes", demandesJson);
+        session.getBasicRemote().sendText(responseJson.toString());
+    }
+
+    // --- Fin des méthodes pour Demande de Parole ---
+
 }

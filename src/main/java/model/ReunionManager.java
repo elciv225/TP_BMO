@@ -22,6 +22,7 @@ public class ReunionManager {
      * Planifie une nouvelle réunion
      */
     public Reunion planifierReunion(String nom, String sujet, String agenda, LocalDateTime debut, int duree, Reunion.Type type, int organisateurId, Integer animateurId) throws SQLException {
+        // statut_reunion will default to 'PLANIFIEE' in the database
         String sql = "INSERT INTO reunion (nom, sujet, agenda, debut, duree, type, organisateur_id, animateur_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
 
         try (PreparedStatement pstmt = connection.prepareStatement(sql, PreparedStatement.RETURN_GENERATED_KEYS)) {
@@ -60,7 +61,7 @@ public class ReunionManager {
      * Consulte les détails d'une réunion par son ID
      */
     public Reunion consulterDetailsReunion(int reunionId) throws SQLException {
-        String sql = "SELECT id, nom, sujet, agenda, debut, duree, type, organisateur_id, animateur_id FROM reunion WHERE id = ?";
+        String sql = "SELECT id, nom, sujet, agenda, debut, duree, type, organisateur_id, animateur_id, statut_reunion FROM reunion WHERE id = ?";
 
         try (PreparedStatement pstmt = connection.prepareStatement(sql)) {
             pstmt.setInt(1, reunionId);
@@ -68,6 +69,7 @@ public class ReunionManager {
 
             if (rs.next()) {
                 Integer animateurId = rs.getObject("animateur_id") != null ? rs.getInt("animateur_id") : null;
+                Reunion.StatutReunion statut = Reunion.StatutReunion.valueOf(rs.getString("statut_reunion"));
 
                 return new Reunion(
                         rs.getInt("id"),
@@ -78,7 +80,8 @@ public class ReunionManager {
                         rs.getInt("duree"),
                         Reunion.Type.valueOf(rs.getString("type")),
                         rs.getInt("organisateur_id"),
-                        animateurId
+                        animateurId,
+                        statut
                 );
             }
             return null;
@@ -107,41 +110,48 @@ public class ReunionManager {
     /**
      * Ouvre une réunion (vérifie que l'utilisateur est animateur ou organisateur)
      */
-    public boolean ouvrirReunion(int reunionId, int animateurId) throws SQLException {
-        String sql = "SELECT COUNT(*) FROM reunion WHERE id = ? AND (animateur_id = ? OR organisateur_id = ?)";
-
-        try (PreparedStatement pstmt = connection.prepareStatement(sql)) {
-            pstmt.setInt(1, reunionId);
-            pstmt.setInt(2, animateurId);
-            pstmt.setInt(3, animateurId);
-            ResultSet rs = pstmt.executeQuery();
+    public boolean ouvrirReunion(int reunionId, int userId) throws SQLException {
+        String checkSql = "SELECT COUNT(*) FROM reunion WHERE id = ? AND (animateur_id = ? OR organisateur_id = ?)";
+        try (PreparedStatement pstmtCheck = connection.prepareStatement(checkSql)) {
+            pstmtCheck.setInt(1, reunionId);
+            pstmtCheck.setInt(2, userId);
+            pstmtCheck.setInt(3, userId);
+            ResultSet rs = pstmtCheck.executeQuery();
 
             if (rs.next() && rs.getInt(1) > 0) {
-                // Ici on pourrait ajouter une logique pour marquer la réunion comme "ouverte"
-                // Pour l'instant, on vérifie juste les permissions
-                return true;
+                // User is authorized, now update status
+                String updateSql = "UPDATE reunion SET statut_reunion = 'OUVERTE' WHERE id = ?";
+                try (PreparedStatement pstmtUpdate = connection.prepareStatement(updateSql)) {
+                    pstmtUpdate.setInt(1, reunionId);
+                    int affectedRows = pstmtUpdate.executeUpdate();
+                    return affectedRows > 0;
+                }
             }
-            return false;
+            return false; // Not authorized or update failed
         }
     }
 
     /**
      * Clôture une réunion (vérifie que l'utilisateur est animateur ou organisateur)
      */
-    public boolean cloturerReunion(int reunionId, int animateurId) throws SQLException {
-        String sql = "SELECT COUNT(*) FROM reunion WHERE id = ? AND (animateur_id = ? OR organisateur_id = ?)";
-
-        try (PreparedStatement pstmt = connection.prepareStatement(sql)) {
-            pstmt.setInt(1, reunionId);
-            pstmt.setInt(2, animateurId);
-            pstmt.setInt(3, animateurId);
-            ResultSet rs = pstmt.executeQuery();
+    public boolean cloturerReunion(int reunionId, int userId) throws SQLException {
+        String checkSql = "SELECT COUNT(*) FROM reunion WHERE id = ? AND (animateur_id = ? OR organisateur_id = ?)";
+        try (PreparedStatement pstmtCheck = connection.prepareStatement(checkSql)) {
+            pstmtCheck.setInt(1, reunionId);
+            pstmtCheck.setInt(2, userId);
+            pstmtCheck.setInt(3, userId);
+            ResultSet rs = pstmtCheck.executeQuery();
 
             if (rs.next() && rs.getInt(1) > 0) {
-                // Ici on pourrait ajouter une logique pour marquer la réunion comme "fermée"
-                return true;
+                // User is authorized, now update status
+                String updateSql = "UPDATE reunion SET statut_reunion = 'CLOTUREE' WHERE id = ?";
+                try (PreparedStatement pstmtUpdate = connection.prepareStatement(updateSql)) {
+                    pstmtUpdate.setInt(1, reunionId);
+                    int affectedRows = pstmtUpdate.executeUpdate();
+                    return affectedRows > 0;
+                }
             }
-            return false;
+            return false; // Not authorized or update failed
         }
     }
 
@@ -150,13 +160,14 @@ public class ReunionManager {
      */
     public List<Reunion> obtenirToutesReunions() throws SQLException {
         List<Reunion> reunions = new ArrayList<>();
-        String sql = "SELECT id, nom, sujet, agenda, debut, duree, type, organisateur_id, animateur_id FROM reunion ORDER BY debut DESC";
+        String sql = "SELECT id, nom, sujet, agenda, debut, duree, type, organisateur_id, animateur_id, statut_reunion FROM reunion ORDER BY debut DESC";
 
         try (PreparedStatement pstmt = connection.prepareStatement(sql);
              ResultSet rs = pstmt.executeQuery()) {
 
             while (rs.next()) {
                 Integer animateurId = rs.getObject("animateur_id") != null ? rs.getInt("animateur_id") : null;
+                Reunion.StatutReunion statut = Reunion.StatutReunion.valueOf(rs.getString("statut_reunion"));
 
                 reunions.add(new Reunion(
                         rs.getInt("id"),
@@ -167,7 +178,8 @@ public class ReunionManager {
                         rs.getInt("duree"),
                         Reunion.Type.valueOf(rs.getString("type")),
                         rs.getInt("organisateur_id"),
-                        animateurId
+                        animateurId,
+                        statut
                 ));
             }
         }
@@ -178,16 +190,15 @@ public class ReunionManager {
      * Récupère les réunions ouvertes (actuellement toutes les réunions)
      */
     public List<Reunion> obtenirReunionsOuvertes() throws SQLException {
-        // Dans une implémentation complète, on pourrait filtrer par statut ou par heure
-        // Pour l'instant, on retourne toutes les réunions futures
         List<Reunion> reunions = new ArrayList<>();
-        String sql = "SELECT id, nom, sujet, agenda, debut, duree, type, organisateur_id, animateur_id FROM reunion WHERE debut >= NOW() ORDER BY debut ASC";
+        String sql = "SELECT id, nom, sujet, agenda, debut, duree, type, organisateur_id, animateur_id, statut_reunion FROM reunion WHERE statut_reunion = 'OUVERTE' ORDER BY debut ASC";
 
         try (PreparedStatement pstmt = connection.prepareStatement(sql);
              ResultSet rs = pstmt.executeQuery()) {
 
             while (rs.next()) {
                 Integer animateurId = rs.getObject("animateur_id") != null ? rs.getInt("animateur_id") : null;
+                Reunion.StatutReunion statut = Reunion.StatutReunion.valueOf(rs.getString("statut_reunion"));
 
                 reunions.add(new Reunion(
                         rs.getInt("id"),
@@ -198,7 +209,8 @@ public class ReunionManager {
                         rs.getInt("duree"),
                         Reunion.Type.valueOf(rs.getString("type")),
                         rs.getInt("organisateur_id"),
-                        animateurId
+                        animateurId,
+                        statut
                 ));
             }
         }
@@ -210,7 +222,7 @@ public class ReunionManager {
      */
     public List<Reunion> obtenirReunionsOrganiseesPar(int organisateurId) throws SQLException {
         List<Reunion> reunions = new ArrayList<>();
-        String sql = "SELECT id, nom, sujet, agenda, debut, duree, type, organisateur_id, animateur_id FROM reunion WHERE organisateur_id = ? ORDER BY debut DESC";
+        String sql = "SELECT id, nom, sujet, agenda, debut, duree, type, organisateur_id, animateur_id, statut_reunion FROM reunion WHERE organisateur_id = ? ORDER BY debut DESC";
 
         try (PreparedStatement pstmt = connection.prepareStatement(sql)) {
             pstmt.setInt(1, organisateurId);
@@ -218,6 +230,7 @@ public class ReunionManager {
 
             while (rs.next()) {
                 Integer animateurId = rs.getObject("animateur_id") != null ? rs.getInt("animateur_id") : null;
+                Reunion.StatutReunion statut = Reunion.StatutReunion.valueOf(rs.getString("statut_reunion"));
 
                 reunions.add(new Reunion(
                         rs.getInt("id"),
@@ -228,7 +241,8 @@ public class ReunionManager {
                         rs.getInt("duree"),
                         Reunion.Type.valueOf(rs.getString("type")),
                         rs.getInt("organisateur_id"),
-                        animateurId
+                        animateurId,
+                        statut
                 ));
             }
         }
@@ -253,7 +267,7 @@ public class ReunionManager {
      * Recherche des réunions par nom (pour la fonctionnalité de recherche/rejoindre)
      */
     public Reunion rechercherReunionParNom(String nom) throws SQLException {
-        String sql = "SELECT id, nom, sujet, agenda, debut, duree, type, organisateur_id, animateur_id FROM reunion WHERE nom = ? LIMIT 1";
+        String sql = "SELECT id, nom, sujet, agenda, debut, duree, type, organisateur_id, animateur_id, statut_reunion FROM reunion WHERE nom = ? LIMIT 1";
 
         try (PreparedStatement pstmt = connection.prepareStatement(sql)) {
             pstmt.setString(1, nom);
@@ -261,6 +275,7 @@ public class ReunionManager {
 
             if (rs.next()) {
                 Integer animateurId = rs.getObject("animateur_id") != null ? rs.getInt("animateur_id") : null;
+                Reunion.StatutReunion statut = Reunion.StatutReunion.valueOf(rs.getString("statut_reunion"));
 
                 return new Reunion(
                         rs.getInt("id"),
@@ -271,7 +286,8 @@ public class ReunionManager {
                         rs.getInt("duree"),
                         Reunion.Type.valueOf(rs.getString("type")),
                         rs.getInt("organisateur_id"),
-                        animateurId
+                        animateurId,
+                        statut
                 );
             }
             return null;

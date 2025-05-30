@@ -12,9 +12,14 @@ public class Reunion {
     private Type type;
     private int idOrganisateur;
     private Integer idAnimateur; // Nullable
+    private StatutReunion statutReunion;
 
     public enum Type {
         STANDARD, PRIVEE, DEMOCRATIQUE
+    }
+
+    public enum StatutReunion {
+        PLANIFIEE, OUVERTE, CLOTUREE
     }
 
     // CORRECTION: Constructeur pour création (sans ID)
@@ -27,10 +32,11 @@ public class Reunion {
         this.type = type;
         this.idOrganisateur = idOrganisateur;
         this.idAnimateur = idAnimateur;
+        this.statutReunion = StatutReunion.PLANIFIEE; // Default status
     }
 
     // CORRECTION: Constructeur complet (avec ID, pour les données de la DB)
-    public Reunion(int id, String nom, String sujet, String agenda, LocalDateTime debut, int duree, Type type, int idOrganisateur, Integer idAnimateur) {
+    public Reunion(int id, String nom, String sujet, String agenda, LocalDateTime debut, int duree, Type type, int idOrganisateur, Integer idAnimateur, StatutReunion statutReunion) {
         this.id = id;
         this.nom = nom;
         this.sujet = sujet;
@@ -40,6 +46,7 @@ public class Reunion {
         this.type = type;
         this.idOrganisateur = idOrganisateur;
         this.idAnimateur = idAnimateur;
+        this.statutReunion = statutReunion;
     }
 
     // Getters et Setters
@@ -115,6 +122,14 @@ public class Reunion {
         this.idAnimateur = idAnimateur;
     }
 
+    public StatutReunion getStatutReunion() {
+        return statutReunion;
+    }
+
+    public void setStatutReunion(StatutReunion statutReunion) {
+        this.statutReunion = statutReunion;
+    }
+
     @Override
     public String toString() {
         return "Reunion{" +
@@ -127,6 +142,7 @@ public class Reunion {
                 ", type=" + type +
                 ", idOrganisateur=" + idOrganisateur +
                 ", idAnimateur=" + idAnimateur +
+                ", statutReunion=" + statutReunion +
                 '}';
     }
 }

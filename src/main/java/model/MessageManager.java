@@ -15,8 +15,17 @@ public class MessageManager {
         this.connection = Database.getConnection(); //
     }
 
-    public Message envoyerMessage(int personneId, int reunionId, String contenu) throws SQLException {
-        String sql = "INSERT INTO message (personne_id, reunion_id, contenu) VALUES (?, ?, ?)"; //
+    /**
+     * Crée un nouveau message dans la base de données.
+     * L'heure d'envoi est gérée par la base de données (DEFAULT CURRENT_TIMESTAMP).
+     * @param personneId L'ID de la personne qui envoie le message.
+     * @param reunionId L'ID de la réunion où le message est envoyé.
+     * @param contenu Le contenu du message.
+     * @return L'objet Message créé, incluant son ID et l'heure d'envoi générés par la DB.
+     * @throws SQLException Si une erreur de base de données survient.
+     */
+    public Message creerMessage(int personneId, int reunionId, String contenu) throws SQLException {
+        String sql = "INSERT INTO message (personne_id, reunion_id, contenu) VALUES (?, ?, ?)";
         try (PreparedStatement pstmt = connection.prepareStatement(sql, PreparedStatement.RETURN_GENERATED_KEYS)) {
             pstmt.setInt(1, personneId);
             pstmt.setInt(2, reunionId);

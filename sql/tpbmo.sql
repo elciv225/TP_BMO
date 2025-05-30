@@ -22,7 +22,8 @@ CREATE TABLE IF NOT EXISTS reunion
     duree           INT                                       NOT NULL,
     type            ENUM ('STANDARD','PRIVEE','DEMOCRATIQUE') NOT NULL,
     organisateur_id INT                                       NOT NULL,
-    animateur_id    INT
+    animateur_id    INT,
+    statut_reunion ENUM('PLANIFIEE', 'OUVERTE', 'CLOTUREE') DEFAULT 'PLANIFIEE' NOT NULL
 );
 
 -- Table pour l'association entre personnes et réunions (participation)
@@ -48,7 +49,7 @@ CREATE TABLE IF NOT EXISTS demande_parole
     personne_id   INT NOT NULL,
     reunion_id    INT NOT NULL,
     heure_demande TIMESTAMP                                DEFAULT CURRENT_TIMESTAMP,
-    statut        ENUM ('EN_ATTENTE','ACCORDEE','REFUSEE') DEFAULT 'EN_ATTENTE',
+    statut        ENUM ('EN_ATTENTE','ACCORDEE','REFUSEE', 'TERMINEE') DEFAULT 'EN_ATTENTE',
     UNIQUE (personne_id, reunion_id, statut)
 );
 
