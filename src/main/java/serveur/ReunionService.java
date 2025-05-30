@@ -97,6 +97,9 @@ public class ReunionService implements WebSocketAction {
                     autoriserAccesReunionPrivee(data, session);
                     actionEnvoieSaPropreReponse = true;
                     break;
+                case "supprimerReunion":
+                    supprimerReunion(data, session);
+                    actionEnvoieSaPropreReponse = true;
                 default:
                     reponseStr = genererReponseErreur("Action inconnue '" + action + "' dans le modèle reunion").toString();
                     break;
@@ -293,6 +296,107 @@ public class ReunionService implements WebSocketAction {
         return reponseJson.toString();
     }
 
+  private void supprimerReunion(JSONObject data, Session session) {
+    try {
+        String reponse = supprimerReunionLogic(data);
+
+    } catch (Exception e) {
+        e.printStackTrace();
+        JSONObject erreurJson = new JSONObject();
+        erreurJson.put("modele", "reunion");
+        erreurJson.put("action", "reponseSuppression");
+        erreurJson.put("statut", "echec");
+        erreurJson.put("message", "Erreur serveur lors de la suppression");
+
+    }
+}
+
+private String supprimerReunionLogic(JSONObject data) throws SQLException {
+    JSONObject reponseJson = new JSONObject();
+    reponseJson.put("modele", "reunion");
+    reponseJson.put("action", "reponseSuppression");
+
+    int reunionId = data.optInt("reunionId", -1);
+    int utilisateurId = data.optInt("userId", -1);
+
+    // Validation des données d'entrée
+    if (reunionId == -1 || utilisateurId == -1) {
+        reponseJson.put("statut", "echec").put("message", "Données manquantes pour la suppression");
+        return reponseJson.toString();
+    }
+
+    // Vérifier que la réunion existe et que l'utilisateur est l'organisateur
+    try (Connection conn = Database.getConnection();
+         PreparedStatement checkStmt = conn.prepareStatement("SELECT organisateur_id, nom, statut FROM reunion WHERE id = ?")) {
+
+        checkStmt.setInt(1, reunionId);
+        try (ResultSet rs = checkStmt.executeQuery()) {
+            if (!rs.next()) {
+                reponseJson.put("statut", "echec").put("message", "Réunion non trouvée");
+                return reponseJson.toString();
+            }
+
+            int organisateurId = rs.getInt("organisateur_id");
+            String nomReunion = rs.getString("nom");
+            String statutReunion = rs.getString("statut");
+
+            // Vérifier les permissions
+            if (utilisateurId != organisateurId) {
+                reponseJson.put("statut", "echec").put("message", "Seul l'organisateur peut supprimer la réunion");
+                return reponseJson.toString();
+            }
+
+            // Optionnel : empêcher la suppression de réunions ouvertes avec des participants actifs
+            if ("OUVERTE".equals(statutReunion)) {
+                // Vérifier s'il y a des participants connectés (autres que l'organisateur)
+                String participantsConnectesSql =
+                    "SELECT COUNT(*) FROM participation p " +
+                    "INNER JOIN personne per ON p.personne_id = per.id " +
+                    "WHERE p.reunion_id = ? AND per.connecte = TRUE AND per.id != ?";
+
+                try (PreparedStatement participantsStmt = conn.prepareStatement(participantsConnectesSql)) {
+                    participantsStmt.setInt(1, reunionId);
+                    participantsStmt.setInt(2, utilisateurId);
+                    try (ResultSet participantsRs = participantsStmt.executeQuery()) {
+                        if (participantsRs.next() && participantsRs.getInt(1) > 0) {
+                            reponseJson.put("statut", "echec")
+                                     .put("message", "Impossible de supprimer une réunion ouverte avec des participants connectés");
+                            return reponseJson.toString();
+                        }
+                    }
+                }
+            }
+
+            // Procéder à la suppression
+            String deleteSql = "DELETE FROM reunion WHERE id = ?";
+            try (PreparedStatement deleteStmt = conn.prepareStatement(deleteSql)) {
+                deleteStmt.setInt(1, reunionId);
+                int affectedRows = deleteStmt.executeUpdate();
+
+                if (affectedRows > 0) {
+                    reponseJson.put("statut", "succes")
+                             .put("message", "La réunion '" + nomReunion + "' a été supprimée avec succès");
+
+                    // TODO: Notifier tous les participants de la suppression si nécessaire
+                    // notifierSuppression(reunionId, nomReunion);
+
+                } else {
+                    reponseJson.put("statut", "echec")
+                             .put("message", "Erreur lors de la suppression de la réunion");
+                }
+            }
+        }
+    } catch (SQLException e) {
+        e.printStackTrace();
+        reponseJson.put("statut", "echec")
+                 .put("message", "Erreur de base de données : " + e.getMessage());
+    }
+
+    return reponseJson.toString();
+}
+
+
+
     // === NOUVELLES FONCTIONNALITÉS ===
 
     private String modifierReunion(JSONObject data) throws SQLException {
@@ -332,6 +436,7 @@ public class ReunionService implements WebSocketAction {
                 }
             }
         }
+
 
         // Effectuer la modification
         ReunionManager reunionManager = new ReunionManager();

@@ -42,6 +42,8 @@ public class ReunionController {
     @FXML private VBox participantsPane;
     @FXML private Label participantCountLabel;
     @FXML private ListView<String> participantsListView;
+    @FXML
+    private Button btnSupprimerReunion;
 
     private ClientWebSocket clientWebSocket;
     private String currentReunionId;
@@ -84,24 +86,31 @@ public class ReunionController {
         this.currentReunionId = reunionId;
         this.currentUserId = userId;
         this.currentReunionNom = (reunionNom != null && !reunionNom.isEmpty()) ? reunionNom : "Réunion " + reunionId;
-        this.organizerId = organizerIdFromCaller; // Utiliser l'ID de l'organisateur passé
+        this.organizerId = organizerIdFromCaller;
         this.currentUserName = (userName != null && !userName.isEmpty()) ? userName : "Utilisateur " + userId;
-
 
         if (connectionStatus != null) {
             connectionStatus.setText(this.currentReunionNom);
         }
 
+        boolean isUserTheOrganizer = (this.currentUserId == this.organizerId && this.currentUserId != -1);
+
+        // Gérer l'affichage de la zone d'invitation
         if (invitationArea != null) {
-            boolean isUserTheOrganizer = (this.currentUserId == this.organizerId && this.currentUserId != -1);
             invitationArea.setVisible(isUserTheOrganizer);
             invitationArea.setManaged(isUserTheOrganizer);
+        }
+
+        // Gérer l'affichage du bouton de suppression
+        if (btnSupprimerReunion != null) {
+            btnSupprimerReunion.setVisible(isUserTheOrganizer);
+            btnSupprimerReunion.setManaged(isUserTheOrganizer);
         }
 
         startTime = LocalDateTime.now();
         startDurationTimer();
         updateStatusIndicatorStyle(true, "Connecté");
-        isInitialized = true; // Marquer comme initialisé
+        isInitialized = true;
 
         fetchInitialReunionData();
     }
@@ -197,6 +206,9 @@ public class ReunionController {
                 String type = json.optString("type");
 
                 switch (type) {
+                    case "deleteReunionResult":
+                        handleDeleteReunionResult(json);
+                        break;
                     case "newMessage":
                         displayMessage(json, false);
                         break;
@@ -472,7 +484,6 @@ public class ReunionController {
             }
             espaceController.setUserInfo(this.currentUserName.replace(" (Vous)",""), "", this.currentUserId); // Nettoyer "(Vous)"
 
-
             Scene scene = new Scene(root);
             stage.setScene(scene);
             stage.setTitle("Espace Utilisateur");
@@ -502,5 +513,96 @@ public class ReunionController {
             }
             alert.showAndWait();
         });
+    }
+
+    @FXML
+    private void handleSupprimerReunion() {
+        // Vérifier que l'utilisateur est bien l'organisateur
+        if (currentUserId != organizerId || organizerId == -1) {
+            showAlert(Alert.AlertType.ERROR, "Permission Refusée",
+                    "Seul l'organisateur peut supprimer la réunion.");
+            return;
+        }
+
+        // Demander confirmation
+        Alert confirmAlert = new Alert(Alert.AlertType.CONFIRMATION);
+        confirmAlert.setTitle("Confirmer la suppression");
+        confirmAlert.setHeaderText("Supprimer la réunion ?");
+        confirmAlert.setContentText("Cette action est irréversible. Tous les messages et participants seront supprimés.\n\n" +
+                "Voulez-vous vraiment supprimer cette réunion ?");
+
+        // Appliquer le style CSS
+        try {
+            String cssPath = getClass().getResource("/styles/main.css").toExternalForm();
+            if (cssPath != null) {
+                confirmAlert.getDialogPane().getStylesheets().add(cssPath);
+                confirmAlert.getDialogPane().getStyleClass().add("dialog-pane");
+            }
+        } catch (Exception e) {
+            System.err.println("CSS pour alerte non trouvé: " + e.getMessage());
+        }
+
+        // Traiter la réponse
+        confirmAlert.showAndWait().ifPresent(response -> {
+            if (response == ButtonType.OK) {
+                // Envoyer la requête de suppression au serveur
+                if (clientWebSocket != null && clientWebSocket.isConnected()) {
+                    JSONObject deleteRequest = new JSONObject();
+                    deleteRequest.put("modele", "reunion");
+                    deleteRequest.put("action", "supprimerReunion");
+                    deleteRequest.put("reunionId", currentReunionId);
+                    deleteRequest.put("userId", String.valueOf(currentUserId));
+                    clientWebSocket.envoyerRequete(deleteRequest.toString());
+                } else {
+                    showAlert(Alert.AlertType.ERROR, "Erreur de Connexion",
+                            "Impossible de supprimer la réunion. Connexion au serveur perdue.");
+                }
+            }
+        });
+
+        try {
+            Stage stage = (Stage) messageArea.getScene().getWindow();
+            FXMLLoader loader = new FXMLLoader(getClass().getResource("/espaceUtilisateur.fxml"));
+            Parent root = loader.load();
+
+            EspaceUtilisateurController espaceController = loader.getController();
+            if (clientWebSocket != null) {
+                espaceController.setClientWebSocket(clientWebSocket);
+                clientWebSocket.setControllerEspc(espaceController);
+                clientWebSocket.setControllerReunion(null);
+            }
+            espaceController.setUserInfo(this.currentUserName.replace(" (Vous)",""), "", this.currentUserId); // Nettoyer "(Vous)"
+
+            Scene scene = new Scene(root);
+            stage.setScene(scene);
+            stage.setTitle("Espace Utilisateur");
+            stage.centerOnScreen();
+
+        } catch (IOException e) {
+            e.printStackTrace();
+            showAlert(Alert.AlertType.ERROR, "Erreur", "Impossible de retourner à l'espace utilisateur.");
+        }
+    }
+
+    // Ajoutez cette méthode pour gérer la réponse du serveur
+    private void handleDeleteReunionResult(JSONObject json) {
+        boolean success = json.optBoolean("success", false);
+        String message = json.optString("message", "Aucun message du serveur.");
+
+        if (success) {
+            showAlert(Alert.AlertType.INFORMATION, "Réunion Supprimée", message);
+            // Retourner automatiquement à l'espace utilisateur après suppression
+            Platform.runLater(() -> {
+                try {
+                    handleQuitterReunion(); // Utilise la méthode existante pour nettoyer et retourner
+                } catch (Exception e) {
+                    e.printStackTrace();
+                    showAlert(Alert.AlertType.ERROR, "Erreur",
+                            "Réunion supprimée mais impossible de retourner à l'espace utilisateur.");
+                }
+            });
+        } else {
+            showAlert(Alert.AlertType.ERROR, "Erreur de Suppression", message);
+        }
     }
 }

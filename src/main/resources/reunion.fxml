@@ -28,6 +28,12 @@
                 </graphic>
                 <tooltip><Tooltip text="Afficher les participants"/></tooltip>
             </Button>
+            <Button fx:id="btnSupprimerReunion" text="Supprimer" onAction="#handleSupprimerReunion"
+                    styleClass="destructive-action-button" managed="false" visible="false">
+                <tooltip>
+                    <Tooltip text="Supprimer définitivement cette réunion"/>
+                </tooltip>
+            </Button>
             <Button text="Quitter" onAction="#handleQuitterReunion" styleClass="destructive-action-button"/>
         </HBox>
     </top>
