@@ -239,6 +239,7 @@ public class ReunionService implements WebSocketAction {
             return reponseJson.toString();
         }
 
+        /*
         // Vérifier les autorisations pour les réunions privées
         if ("PRIVEE".equals(typeReunion)) {
             AutorisationReunionPriveeManager autoManager = new AutorisationReunionPriveeManager();
@@ -247,6 +248,7 @@ public class ReunionService implements WebSocketAction {
                 return reponseJson.toString();
             }
         }
+        */
 
         // Vérifier si la réunion est ouverte (sauf pour l'organisateur et l'animateur)
         if (!"OUVERTE".equals(statutReunion)) {

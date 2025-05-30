@@ -226,40 +226,56 @@ public class EspaceUtilisateurController {
     }
 
     private void handleAcceptInvitation(Invitation invitation) {
-        System.out.println("Invitation acceptée pour réunion : " + invitation.getNomReunion() + " (ID Réunion: " + invitation.getReunionId() + ")");
-        rejoindreReunionParId(invitation.getReunionId());
+    System.out.println("Invitation acceptée pour réunion : " + invitation.getNomReunion());
 
-        if (clientWebSocket != null && clientWebSocket.isConnected()) {
-            JSONObject request = new JSONObject();
-            request.put("modele", "reunion");
-            request.put("action", "updateInvitationStatus");
-            request.put("invitationId", invitation.getInvitationId());
-            request.put("userId", this.currentUserId);
-            request.put("newStatus", "ACCEPTEE");
-            clientWebSocket.envoyerRequete(request.toString());
-        }
-        invitationsObservables.remove(invitation);
-        if (listeInvitations != null && invitationsObservables.isEmpty()) {
-             listeInvitations.setPlaceholder(new Label("Aucune invitation en attente."));
-        }
+    // Rejoindre la réunion
+    rejoindreReunionParId(invitation.getReunionId());
+
+    // Mettre à jour le statut sur le serveur
+    if (clientWebSocket != null && clientWebSocket.isConnected()) {
+        JSONObject request = new JSONObject();
+        request.put("modele", "reunion");
+        request.put("action", "updateInvitationStatus");
+        request.put("invitationId", invitation.getInvitationId());
+        request.put("userId", this.currentUserId);
+        request.put("newStatus", "ACCEPTEE");
+        clientWebSocket.envoyerRequete(request.toString());
     }
+
+    // CORRECTION : S'assurer que la suppression se fait sur le bon thread
+    Platform.runLater(() -> {
+        invitationsObservables.remove(invitation);
+        listeInvitations.refresh(); // Forcer le rafraîchissement
+
+        if (invitationsObservables.isEmpty() && listeInvitations != null) {
+            listeInvitations.setPlaceholder(new Label("Aucune invitation en attente."));
+        }
+    });
+}
 
     private void handleDeclineInvitation(Invitation invitation) {
-        System.out.println("Invitation refusée pour réunion : " + invitation.getNomReunion());
-        if (clientWebSocket != null && clientWebSocket.isConnected()) {
-            JSONObject request = new JSONObject();
-            request.put("modele", "reunion");
-            request.put("action", "updateInvitationStatus");
-            request.put("invitationId", invitation.getInvitationId());
-            request.put("userId", this.currentUserId);
-            request.put("newStatus", "REFUSEE");
-            clientWebSocket.envoyerRequete(request.toString());
-        }
-        invitationsObservables.remove(invitation);
-        if (listeInvitations != null && invitationsObservables.isEmpty()) {
-             listeInvitations.setPlaceholder(new Label("Aucune invitation en attente."));
-        }
+    System.out.println("Invitation refusée pour réunion : " + invitation.getNomReunion());
+
+    if (clientWebSocket != null && clientWebSocket.isConnected()) {
+        JSONObject request = new JSONObject();
+        request.put("modele", "reunion");
+        request.put("action", "updateInvitationStatus");
+        request.put("invitationId", invitation.getInvitationId());
+        request.put("userId", this.currentUserId);
+        request.put("newStatus", "REFUSEE");
+        clientWebSocket.envoyerRequete(request.toString());
     }
+
+    // CORRECTION : Même traitement que pour l'acceptation
+    Platform.runLater(() -> {
+        invitationsObservables.remove(invitation);
+        listeInvitations.refresh(); // Forcer le rafraîchissement
+
+        if (invitationsObservables.isEmpty() && listeInvitations != null) {
+            listeInvitations.setPlaceholder(new Label("Aucune invitation en attente."));
+        }
+    });
+}
 
     public void traiterReponseServeur(String message) {
         // Platform.runLater est dans ClientWebSocket.onMessage, donc l'appel à cette méthode est déjà sur le bon thread.
